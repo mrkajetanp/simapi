@@ -5,6 +5,7 @@
 #include "../simdata.h"
 #include "../simmapper.h"
 #include "../forzadef.h"
+#include "maputil.h"
 
 #include "../../include/forza.h"
 
@@ -67,7 +68,7 @@ void map_forza_data(SimData* simdata, SimMap* simmap, char* base)
 
     simdata->gas   = *(uint8_t*)(a + offsetof(Forza_Dash, Accel));
     simdata->brake = *(uint8_t*)(a + offsetof(Forza_Dash, Brake));
-    simdata->clutch = *(uint8_t*)(a + offsetof(Forza_Dash, Clutch));
+    simdata->clutch = clamp_pedal(*(uint8_t*)(a + offsetof(Forza_Dash, Clutch)) / 255.0);
     simdata->handbrake = *(uint8_t*)(a + offsetof(Forza_Dash, HandBrake));
 
     simdata->steer = *(int8_t*)(a + offsetof(Forza_Dash, Steer));

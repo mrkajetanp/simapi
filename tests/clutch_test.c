@@ -218,6 +218,22 @@ static double lfs_clutch(float raw)
     return outgauge_clutch(SIMULATOREXE_LIVE_FOR_SPEED, 2, raw);
 }
 
+static double forza_clutch(uint8_t raw)
+{
+    SimData* sd = new_simdata();
+    SimMap* sm = new_simmap();
+    Forza_Dash* p = calloc(1, sizeof(*p));
+    p->Clutch = raw;
+
+    map_forza_data(sd, sm, (char*) p);
+    double c = sd->clutch;
+
+    free(p);
+    free(sm);
+    free(sd);
+    return c;
+}
+
 /* ---------------- tests ---------------- */
 
 static void test_float_range(const char* sim, double (*f)(float))
@@ -260,6 +276,7 @@ int main(void)
     test_float_range("beamng", beamng_clutch);
     test_float_clamp("beamng", beamng_clutch);
     test_float_range("lfs", lfs_clutch);
+    test_byte_range("forza", forza_clutch);
     test_float_range("dirt2", dirt2_clutch);
     test_float_range("rbr", rbr_clutch);
     test_float_range("wreckfest2", wf2_clutch);
