@@ -104,6 +104,23 @@ static double pcars2_clutch(float raw)
     return c;
 }
 
+static double scs2_clutch(float raw)
+{
+    SimData* sd = new_simdata();
+    SimMap* sm = new_simmap();
+    struct scs2TelemetryMap_s* t = calloc(1, sizeof(*t));
+    t->truck_f.userClutch = raw;
+    sm->scs2.telemetry_map_addr = t;
+
+    map_trucks_data(sd, sm);
+    double c = sd->clutch;
+
+    free(t);
+    free(sm);
+    free(sd);
+    return c;
+}
+
 /* ---------------- UDP sims ---------------- */
 
 static double ams2udp_clutch(uint8_t raw)
@@ -210,6 +227,8 @@ int main(void)
     test_float_range("pcars2", pcars2_clutch);
     test_float_clamp("pcars2", pcars2_clutch);
     test_byte_range("ams2 udp", ams2udp_clutch);
+    test_float_range("scs2", scs2_clutch);
+    test_float_clamp("scs2", scs2_clutch);
     test_float_range("dirt2", dirt2_clutch);
     test_float_range("rbr", rbr_clutch);
     test_float_range("wreckfest2", wf2_clutch);

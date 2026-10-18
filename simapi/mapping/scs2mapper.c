@@ -6,6 +6,7 @@
 #include "../simapi.h"
 #include "../simmapper.h"
 #include "../scs2.h"
+#include "maputil.h"
 
 #include "../../include/scs2data.h"
 
@@ -40,6 +41,7 @@ void map_trucks_data(SimData* simdata, SimMap* simmap)
     simdata->rpms = droundint(*(float*) (char*) (a + offsetof(struct scs2TelemetryMap_s, truck_f.engineRpm)));
     simdata->brake = droundint(*(float*) (char*) (a + offsetof(struct scs2TelemetryMap_s, truck_f.userBrake)));
     simdata->gas = droundint(*(float*) (char*) (a + offsetof(struct scs2TelemetryMap_s, truck_f.userThrottle)));
+    simdata->clutch = clamp_pedal(*(float*) (char*) (a + offsetof(struct scs2TelemetryMap_s, truck_f.userClutch)));
     simdata->gear = *(uint32_t*) (char*) (a + offsetof(struct scs2TelemetryMap_s, truck_i.gear));
     simdata->tyreRPS[0] = *(float*) (char*) (a + offsetof(struct scs2TelemetryMap_s, truck_f.truck_wheelVelocity));
     simdata->tyreRPS[1] = *(float*) (char*) (a + offsetof(struct scs2TelemetryMap_s, truck_f.truck_wheelVelocity) + (sizeof(float) * 1));
