@@ -6,6 +6,7 @@
 #include "../simapi.h"
 #include "../simmapper.h"
 #include "../ac.h"
+#include "maputil.h"
 
 #include "../../include/acdata.h"
 
@@ -100,7 +101,7 @@ void map_assetto_corsa_data(SimData* simdata, SimMap* simmap, SimulatorEXE simex
     simdata->velocity = droundint( *(float*) (char*) (a + offsetof(struct SPageFilePhysics, speedKmh)));
 
     simdata->gas = *(float*) (char*) (a + offsetof(struct SPageFilePhysics, gas));
-    simdata->clutch = *(float*) (char*) (a + offsetof(struct SPageFilePhysics, clutch));
+    simdata->clutch = clamp_pedal(*(float*) (char*) (a + offsetof(struct SPageFilePhysics, clutch)));
     simdata->steer = *(float*) (char*) (a + offsetof(struct SPageFilePhysics, steerAngle));
     simdata->brake = *(float*) (char*) (a + offsetof(struct SPageFilePhysics, brake));
     simdata->heading = *(float*) (char*) (a + offsetof(struct SPageFilePhysics, heading) + sizeof(float));

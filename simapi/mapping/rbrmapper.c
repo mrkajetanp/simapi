@@ -12,6 +12,7 @@
 #include "../simdata.h"
 #include "../simmap.h"
 #include "../simmapper.h"
+#include "maputil.h"
 
 static int froundint(float f)
 {
@@ -99,7 +100,7 @@ void map_richard_burns_rally_data(SimData *simdata, SimMap *simmap, char* base)
         simdata->gas = (double)packet->control_.throttle_;
         simdata->steer = (double)packet->control_.steering_;
         simdata->brake = (double)packet->control_.brake_;
-        simdata->clutch = (double)packet->control_.clutch_;
+        simdata->clutch = clamp_pedal((double)packet->control_.clutch_);
 
         // World Velocities
         simdata->worldXvelocity = (double)packet->car_.velocities_.surge_;

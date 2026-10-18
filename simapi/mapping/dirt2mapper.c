@@ -12,6 +12,7 @@
 #include "../simdata.h"
 #include "../simmap.h"
 #include "../simmapper.h"
+#include "maputil.h"
 
 #define DR2_RPM_SCALE 10.0f
 
@@ -91,7 +92,7 @@ void map_dirt_rally_2_data(SimData *simdata, SimMap *simmap, char* base)
         simdata->gas = (double)packet->fields.throttle;
         simdata->steer = (double)packet->fields.steering;
         simdata->brake = (double)packet->fields.brake;
-        simdata->clutch = (double)packet->fields.clutch;
+        simdata->clutch = clamp_pedal((double)packet->fields.clutch);
 
         // World Velocities
         simdata->worldXvelocity = (double)packet->fields.velX;

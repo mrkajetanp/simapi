@@ -12,6 +12,7 @@
 #include "../simapi.h"
 #include "../simmapper.h"
 #include "../wreckfest2.h"
+#include "maputil.h"
 #include "../../include/wreckfest2data.h"
 
 // Forward declarations for helper functions
@@ -97,7 +98,7 @@ static void map_main_packet(SimData* simdata, SimMap* simmap, char* base)
     // Inputs (already 0-1 range)
     simdata->gas = (double)packet->carPlayer.input.throttle;
     simdata->brake = (double)packet->carPlayer.input.brake;
-    simdata->clutch = (double)packet->carPlayer.input.clutch;
+    simdata->clutch = clamp_pedal((double)packet->carPlayer.input.clutch);
     simdata->steer = (double)packet->carPlayer.input.steering;
     simdata->handbrake = (double)packet->carPlayer.input.handbrake;
 
