@@ -76,6 +76,9 @@ if(ENABLE_TESTS)
     add_executable(scs2_test tests/scs2_test.c)
     target_link_libraries(scs2_test simapi m)
     add_test(NAME scs2_test COMMAND scs2_test)
+    add_executable(clutch_test tests/clutch_test.c)
+    target_link_libraries(clutch_test simapi m)
+    add_test(NAME clutch_test COMMAND clutch_test)
 endif()
 
 
