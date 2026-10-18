@@ -13,6 +13,9 @@ typedef struct
     void* telemetry_map_addr;
     int fd_telemetry;
     struct LMUObject lmu_telemetry;
+    double prev_elapsed_time;
+    double prev_deflection[4];
+    uint64_t prev_frame_mtick;
 }
 LMUMap;
 
