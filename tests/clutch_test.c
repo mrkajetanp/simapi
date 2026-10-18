@@ -34,7 +34,8 @@ static int checks = 0;
 static void check(const char* sim, const char* what, double got, double want)
 {
     checks++;
-    if (fabs(got - want) > 1e-6)
+    // isnan() first: a NaN result would otherwise compare as a pass
+    if (isnan(got) || fabs(got - want) > 1e-6)
     {
         failures++;
         fprintf(stderr, "FAIL %-12s %-24s got %f want %f\n", sim, what, got, want);
