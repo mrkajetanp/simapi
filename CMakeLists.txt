@@ -50,4 +50,12 @@ if(BUILD_SIMD)
     target_link_libraries(view_telemetry simapi m)
 endif()
 
+option(ENABLE_TESTS "Build unit tests" OFF)
+if(ENABLE_TESTS)
+    enable_testing()
+    add_executable(clutch_test tests/clutch_test.c)
+    target_link_libraries(clutch_test simapi m)
+    add_test(NAME clutch_test COMMAND clutch_test)
+endif()
+
 
