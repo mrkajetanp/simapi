@@ -48,6 +48,17 @@
 static bool does_sim_file_exist(const char* file);
 static int simdmap(SimMap* simmap, SimData* simdata);
 
+// detection runs every second, so LMU's state is logged only when it changes
+enum
+{
+    LMU_LOG_NONE,
+    LMU_LOG_USING,
+    LMU_LOG_WAITING,
+    LMU_LOG_WARNED,
+};
+
+#define LMU_EMPTY_WARN_MS 30000
+
 
 
 
@@ -553,6 +564,15 @@ static int set_sim_info(SimInfo* si)
             si->SimSupportsHapticEffects = true;
             si->SimSupportsAdvancedUI = true;
             break;
+        case SIMULATORAPI_LMU :
+            si->SimUsesUDP = false;
+            si->SimSupportsBasicTelemetry = true;
+            si->SimSupportsTyreEffects = true;
+            si->SimSupportsRealtimeTelemetry = true;
+            si->SimSupportsHapticEffects = true;
+            si->SimSupportsAdvancedUI = true;
+            si->SimCalculatesTyreDiameter = true;
+            break;
         case SIMULATORAPI_PROJECTCARS2 :
             si->SimSupportsBasicTelemetry = true;
             si->SimSupportsTyreEffects = true;
@@ -967,8 +987,82 @@ SimInfo simapi_get_sim(SimData* simdata, SimMap* simmap, bool force_udp, int (*s
             }
             break;
 
-        case SIMULATOREXE_RFACTOR2:
         case SIMULATOREXE_LEMANS_ULTIMATE:
+            if (si.pid != simmap->lmu.game_pid)
+            {
+                simmap->lmu.game_pid = si.pid;
+                simmap->lmu.empty_since = 0;
+                simmap->lmu.log_state = LMU_LOG_NONE;
+            }
+            if (does_sim_file_exist("/dev/shm/" LMU_FILE))
+            {
+                int error = simapi_init(simdata, simmap, SIMULATORAPI_LMU, simexe);
+                // simd and lmushm create a zeroed file before the game runs, so
+                // only a block the game has written may shadow the rF2 plugin.
+                // simd also zeroes the file whenever it releases a sim, and the
+                // game may write gameVersion only once, so a live telemetry
+                // block counts too
+                const struct LMUObject* lmu = simmap->lmu.telemetry_map_addr;
+                if (error == 0 && (lmu->generic.gameVersion != 0 || lmu->telemetry.activeVehicles > 0))
+                {
+                    if (simmap->lmu.log_state != LMU_LOG_USING)
+                    {
+                        simapi_log(SIMAPI_LOGLEVEL_DEBUG, "using Le Mans Ultimate built-in shared memory");
+                        simmap->lmu.log_state = LMU_LOG_USING;
+                    }
+                    simmap->lmu.empty_since = 0;
+                    si.simulatorapi = SIMULATORAPI_LMU;
+                    simapi_datamap(simdata, simmap, SIMULATORAPI_LMU, false, NULL);
+
+                    simdata->simon = true;
+                    simdata->simapi = SIMULATORAPI_LMU;
+                    simdata->simexe = simexe;
+
+                    si.isSimOn = true;
+                    si.simulatorapi = simdata->simapi;
+                    si.mapapi = si.simulatorapi;
+                    si.simulatorexe = simdata->simexe;
+                    set_sim_info(&si);
+
+                    return si;
+                }
+                long long now = timeInMilliseconds();
+                if (simmap->lmu.empty_since == 0)
+                {
+                    simmap->lmu.empty_since = now;
+                }
+                if (simmap->lmu.log_state == LMU_LOG_NONE || simmap->lmu.log_state == LMU_LOG_USING)
+                {
+                    char* temp;
+                    asprintf(&temp, "waiting for Le Mans Ultimate to fill its shared memory (simapi_init error %i)", error);
+                    simapi_log(SIMAPI_LOGLEVEL_DEBUG, temp);
+                    free(temp);
+                    simmap->lmu.log_state = LMU_LOG_WAITING;
+                }
+                // a bridge that started after the game created its mapping
+                // leaves the file empty for good, with nothing else to show for it
+                if (simmap->lmu.log_state == LMU_LOG_WAITING && now - simmap->lmu.empty_since >= LMU_EMPTY_WARN_MS)
+                {
+                    simapi_log(SIMAPI_LOGLEVEL_INFO, "Le Mans Ultimate is running but /dev/shm/" LMU_FILE " is still empty, trying the rFactor 2 plugin instead. Check that Enable Plugins is on in the game's settings; when simd bridges the game, the bridge must start before the game creates its shared memory");
+                    simmap->lmu.log_state = LMU_LOG_WARNED;
+                }
+                if (error == 0)
+                {
+                    munmap(simmap->lmu.telemetry_map_addr, sizeof(simmap->lmu.lmu_telemetry));
+                    close(simmap->lmu.fd_telemetry);
+                    simmap->lmu.has_telemetry = false;
+                }
+                // the file exists before the game has loaded far enough to
+                // write it, and an rF2 plugin found in that window would
+                // hold the sim for the whole session
+                if (simmap->lmu.log_state != LMU_LOG_WARNED)
+                {
+                    break;
+                }
+            }
+            // a user with the rF2 plugin working should keep working
+            // fall through
+        case SIMULATOREXE_RFACTOR2:
             int rf_telemetry_file = check_sim_file("/dev/shm/$rFactor2SMMP_Telemetry$");
             if (rf_telemetry_file > 0)
             {
@@ -1260,7 +1354,12 @@ int simapi_datamap(SimData* simdata, SimMap* simmap, SimulatorAPI simulatorapi, 
             double tyre2 = simdata->tyrediameter[2];
             double tyre3 = simdata->tyrediameter[3];
             memcpy(simdata, simmap->addr, sizeof(SimData));
-            if(simdata->simapi != SIMULATORAPI_ASSETTO_CORSA)
+            // keep the consumer's own (calibrated) diameters unless the sim
+            // supplies real ones, which it then must not be asked to calibrate
+            SimInfo daemon_si = { 0 };
+            daemon_si.simulatorapi = simdata->simapi;
+            set_sim_info(&daemon_si);
+            if(daemon_si.SimCalculatesTyreDiameter == false)
             {
                 simdata->tyrediameter[0] = tyre0;
                 simdata->tyrediameter[1] = tyre1;

@@ -5,7 +5,7 @@ two ways:
 
 | Interface | Name | Needs | simapi status |
 |---|---|---|---|
-| **Built-in shared memory** (LMU 1.2+) | `LMU_Data` | *Enable Plugins* turned on in game; on Linux a bridge (see below) | layout in `include/lmu.h`; no mapper yet |
+| **Built-in shared memory** (LMU 1.2+) | `LMU_Data` | *Enable Plugins* turned on in game; on Linux a bridge (see below) | supported; preferred when the game has written `/dev/shm/LMU_Data`, otherwise falls back to the plugin after 30 s |
 | rFactor 2 Shared Memory Map Plugin | `$rFactor2SMMP_*$` | third-party DLL ([Wine fork](https://github.com/schlegp/rF2SharedMemoryMapPlugin_Wine)) | supported, see [rFactor 2](/simapi/rfactor2) |
 
 This page describes the built-in `LMU_Data` interface. Everything here was checked
