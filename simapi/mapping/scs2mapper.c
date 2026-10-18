@@ -7,6 +7,7 @@
 #include "../simapi.h"
 #include "../simmapper.h"
 #include "../scs2.h"
+#include "maputil.h"
 
 #include "../../include/scs2data.h"
 
@@ -190,7 +191,7 @@ void map_trucks_data(SimData* simdata, SimMap* simmap)
     simdata->brake = *(float*) (char*) (a + offsetof(struct scs2TelemetryMap_s, truck_f.userBrake));
     simdata->gas = *(float*) (char*) (a + offsetof(struct scs2TelemetryMap_s, truck_f.userThrottle));
     // pedal input 0..1, 1 = fully pressed (SCS SDK input_clutch), not the effective clutch
-    simdata->clutch = *(float*) (char*) (a + offsetof(struct scs2TelemetryMap_s, truck_f.userClutch));
+    simdata->clutch = clamp_pedal(*(float*) (char*) (a + offsetof(struct scs2TelemetryMap_s, truck_f.userClutch)));
     simdata->maxrpm = droundint( *(float*) (char*) (a + offsetof(struct scs2TelemetryMap_s, config_f.engineRpmMax)));
     simdata->maxgears = *(uint32_t*) (char*) (a + offsetof(struct scs2TelemetryMap_s, config_ui.gears));
 
