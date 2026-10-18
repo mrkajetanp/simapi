@@ -7,6 +7,7 @@
 #include "../simapi.h"
 #include "../simmapper.h"
 #include "../outgauge.h"
+#include "maputil.h"
 
 #include "../../include/outgauge.h"
 
@@ -38,6 +39,7 @@ void map_outgauge_outsim_data(SimData* simdata, SimMap* simmap, SimulatorEXE sim
             simdata->fuel = *(float*) (char*) (a + offsetof(struct outgauge, fuel));
             simdata->gas = *(float*) (char*) (a + offsetof(struct outgauge, throttle));
             simdata->brake = *(float*) (char*) (a + offsetof(struct outgauge, brake));
+            simdata->clutch = clamp_pedal(*(float*) (char*) (a + offsetof(struct outgauge, clutch)));
 
             uint8_t i = 0;
             simdata->car[4] = '\0';

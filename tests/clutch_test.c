@@ -190,6 +190,34 @@ static double wf2_clutch(float raw)
     return c;
 }
 
+static double outgauge_clutch(SimulatorEXE simexe, int id, float raw)
+{
+    SimData* sd = new_simdata();
+    SimMap* sm = new_simmap();
+    struct outgauge* p = calloc(1, sizeof(*p));
+    p->id = id;
+    p->clutch = raw;
+
+    map_outgauge_outsim_data(sd, sm, simexe, (char*) p);
+    double c = sd->clutch;
+
+    free(p);
+    free(sm);
+    free(sd);
+    return c;
+}
+
+static double beamng_clutch(float raw)
+{
+    return outgauge_clutch(SIMULATOREXE_BEAMNG, 0, raw);
+}
+
+static double lfs_clutch(float raw)
+{
+    // LFS OutGauge packets are recognised by OutGauge ID 2
+    return outgauge_clutch(SIMULATOREXE_LIVE_FOR_SPEED, 2, raw);
+}
+
 /* ---------------- tests ---------------- */
 
 static void test_float_range(const char* sim, double (*f)(float))
@@ -229,6 +257,9 @@ int main(void)
     test_byte_range("ams2 udp", ams2udp_clutch);
     test_float_range("scs2", scs2_clutch);
     test_float_clamp("scs2", scs2_clutch);
+    test_float_range("beamng", beamng_clutch);
+    test_float_clamp("beamng", beamng_clutch);
+    test_float_range("lfs", lfs_clutch);
     test_float_range("dirt2", dirt2_clutch);
     test_float_range("rbr", rbr_clutch);
     test_float_range("wreckfest2", wf2_clutch);
