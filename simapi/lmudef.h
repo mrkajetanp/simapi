@@ -16,6 +16,10 @@ typedef struct
     double prev_elapsed_time;
     double prev_deflection[4];
     uint64_t prev_frame_mtick;
+    int game_pid;
+    long long empty_since;
+    bool bridged;
+    bool warned;
 }
 LMUMap;
 
