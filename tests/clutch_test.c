@@ -122,6 +122,23 @@ static double scs2_clutch(float raw)
     return c;
 }
 
+static double r3e_clutch(float raw)
+{
+    SimData* sd = new_simdata();
+    SimMap* sm = new_simmap();
+    struct r3e_share* t = calloc(1, sizeof(*t));
+    t->clutch = raw;
+    sm->r3e.telemetry_map_addr = t;
+
+    map_r3e_data(sd, sm);
+    double c = sd->clutch;
+
+    free(t);
+    free(sm);
+    free(sd);
+    return c;
+}
+
 /* ---------------- UDP sims ---------------- */
 
 static double ams2udp_clutch(uint8_t raw)
@@ -274,6 +291,9 @@ int main(void)
     test_byte_range("ams2 udp", ams2udp_clutch);
     test_float_range("scs2", scs2_clutch);
     test_float_clamp("scs2", scs2_clutch);
+    test_float_range("r3e", r3e_clutch);
+    test_float_clamp("r3e", r3e_clutch);
+    check("r3e", "not available -1.0", r3e_clutch(-1.0f), 0.0);
     test_float_range("beamng", beamng_clutch);
     test_float_clamp("beamng", beamng_clutch);
     test_float_range("lfs", lfs_clutch);

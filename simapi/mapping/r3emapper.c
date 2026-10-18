@@ -5,6 +5,7 @@
 #include "../simmap.h"
 #include "../simdata.h"
 #include "../simmapper.h"
+#include "maputil.h"
 #include "../../include/r3e.h"
 
 
@@ -50,7 +51,7 @@ void map_r3e_data(SimData* simdata, SimMap* simmap)
 
     simdata->gas   = *(float*)(a + offsetof(struct r3e_share, throttle));
     simdata->brake = *(float*)(a + offsetof(struct r3e_share, brake));
-    simdata->clutch = *(float*)(a + offsetof(struct r3e_share, clutch));
+    simdata->clutch = clamp_pedal(*(float*)(a + offsetof(struct r3e_share, clutch)));
     simdata->steer = *(float*)(a + offsetof(struct r3e_share, steer_input_raw));
 
     /* ---------------- Fuel ---------------- */
