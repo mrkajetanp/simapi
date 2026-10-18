@@ -120,7 +120,7 @@ typedef struct //SimData
     double brake;
     double fuel;
     double fuelcapacity;
-    double clutch;
+    double clutch; // pedal position: 0.0 released (engaged) to 1.0 fully pressed, clamped; 0.0 if the sim has no clutch data
     double steer;
     double handbrake;
 
