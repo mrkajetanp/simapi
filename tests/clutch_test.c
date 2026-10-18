@@ -87,7 +87,41 @@ static double rf2_clutch(double raw)
     return c;
 }
 
+static double pcars2_clutch(float raw)
+{
+    SimData* sd = new_simdata();
+    SimMap* sm = new_simmap();
+    struct pcars2APIStruct* t = calloc(1, sizeof(*t));
+    t->mUnfilteredClutch = raw;
+    sm->pcars2.telemetry_map_addr = t;
+
+    map_project_cars2_data(sd, sm, false, NULL);
+    double c = sd->clutch;
+
+    free(t);
+    free(sm);
+    free(sd);
+    return c;
+}
+
 /* ---------------- UDP sims ---------------- */
+
+static double ams2udp_clutch(uint8_t raw)
+{
+    SimData* sd = new_simdata();
+    SimMap* sm = new_simmap();
+    struct ams2UDPData* p = calloc(1, sizeof(*p));
+    p->mPacketType = 0; // car physics
+    p->sUnfilteredClutch = raw;
+
+    map_project_cars2_data(sd, sm, true, (char*) p);
+    double c = sd->clutch;
+
+    free(p);
+    free(sm);
+    free(sd);
+    return c;
+}
 
 static double dirt2_clutch(float raw)
 {
@@ -148,6 +182,20 @@ static void test_float_range(const char* sim, double (*f)(float))
     check(sim, "midpoint 0.5", f(0.5f), 0.5);
 }
 
+static void test_float_clamp(const char* sim, double (*f)(float))
+{
+    check(sim, "above range 1.5", f(1.5f), 1.0);
+    check(sim, "below range -0.2", f(-0.2f), 0.0);
+    check(sim, "NaN", f(NAN), 0.0);
+}
+
+static void test_byte_range(const char* sim, double (*f)(uint8_t))
+{
+    check(sim, "released 0", f(0), 0.0);
+    check(sim, "pressed 255", f(255), 1.0);
+    check(sim, "midpoint 51", f(51), 0.2);
+}
+
 static void test_double_range(const char* sim, double (*f)(double))
 {
     check(sim, "released 0.0", f(0.0), 0.0);
@@ -159,6 +207,9 @@ int main(void)
 {
     test_float_range("ac", ac_clutch);
     test_double_range("rf2", rf2_clutch);
+    test_float_range("pcars2", pcars2_clutch);
+    test_float_clamp("pcars2", pcars2_clutch);
+    test_byte_range("ams2 udp", ams2udp_clutch);
     test_float_range("dirt2", dirt2_clutch);
     test_float_range("rbr", rbr_clutch);
     test_float_range("wreckfest2", wf2_clutch);
