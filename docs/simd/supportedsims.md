@@ -6,7 +6,7 @@
 | Assetto Corsa Rally | Assetto Corsa | [shm](https://spacefreak18.github.io/simapi/sharedmemory) | acbridge.exe | Silver | |
 | Automobilista 2 | Project Cars 2| [shm](https://spacefreak18.github.io/simapi/sharedmemory) | pcars2.exe | Platinum | |
 | RFactor 2 | RFactor 2 | [shm (native)](https://spacefreak18.github.io/simapi/sharedmemory) | [rFactor2SharedMemoryMapPlugin64](https://github.com/schlegp/rF2SharedMemoryMapPlugin_Wine/tree/master/build) | Platinum | |
-| LeMans Ultimate | RFactor 2 | [shm (native)](https://spacefreak18.github.io/simapi/sharedmemory) | [rFactor2SharedMemoryMapPlugin64](https://github.com/schlegp/rF2SharedMemoryMapPlugin_Wine/tree/master/build) | Platinum | |
+| LeMans Ultimate | LeMans Ultimate | [shm](https://spacefreak18.github.io/simapi/sharedmemory) | lmubridge.exe (or [rFactor2SharedMemoryMapPlugin64](https://github.com/schlegp/rF2SharedMemoryMapPlugin_Wine/tree/master/build)) | Platinum | [lmu](https://spacefreak18.github.io/simapi/simd/sims/lmu) |
 | Live For Speed | Live For Speed | udp | N/A | Bronze | |
 | BeamNG | Live For Speed | udp | N/A | Bronze | |
 | Dirt Rally 2 | Dirt Rally | udp | N/A | Bronze | |

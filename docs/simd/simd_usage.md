@@ -35,6 +35,13 @@ nomemmap (-h) option disables this workaround.
 
 The nodaemon option (-n) disables daemon mode so the process does not fork. And verbose (-v) increases logging verbosity.
 
+## Le Mans Ultimate
+Turn on Settings → Gameplay → Enable Plugins in the game and restart it. Build `lmubridge.exe` with `make -f Makefile.lmu` in simshmbridge, then use
+```
+SIMD_BRIDGE_EXE=~/path/to/lmubridge.exe %command%
+```
+Without `SIMD_BRIDGE_EXE`, simd uses the [rFactor 2 plugin](https://github.com/schlegp/rF2SharedMemoryMapPlugin_Wine) instead.
+
 ## troubleshooting notes
 Be sure to run simd before starting any games. And that's it. It's near enough to a stable state that once you're sure you have everything
 working you can have simd run on system startup.
