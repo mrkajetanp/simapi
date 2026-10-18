@@ -32,7 +32,65 @@ LMU 1.4.2 (September 2026) lists "Fixed some threading issues with shared memory
 LMU runs under Proton, and Proton does not expose Windows named mappings to Linux
 processes under a name they can open (see [Shared Memory](/simapi/sharedmemory)).
 There are three ways around that. simapi reads `/dev/shm/LMU_Data`, which the first
-two provide. Use only one of them at a time, because both own that file.
+two provide. Use only one of them at a time, because each of them owns that file.
+
+### simd with simshmbridge (recommended)
+
+[simd](/simapi/simd) can do everything by itself, together with the `lmubridge.exe`
+helper from [simshmbridge](https://github.com/spacefreak18/simshmbridge):
+
+1. Build the helper: `make -f Makefile.lmu` in simshmbridge produces
+   `assets/lmubridge.exe`.
+2. Make sure `~/.config/simd/simd.config` has the `LeMansUltimate` entry from
+   [simd.config](https://github.com/Spacefreak18/simapi/blob/master/simd/conf/simd.config).
+   simd only launches a bridge for games listed there.
+3. Set LMU's Steam launch options to
+   ```
+   SIMD_BRIDGE_EXE=/path/to/simshmbridge/assets/lmubridge.exe %command%
+   ```
+4. Turn on **Enable Plugins** in the game (see above).
+5. Start simd before the game, with its automatic memory mapping and bridging left
+   on (the default; `-h` and `-a` turn them off).
+
+simd creates `/dev/shm/LMU_Data` (`LMU_SIZE` bytes) when it starts. When it sees
+`Le Mans Ultimate.exe`, it reads `SIMD_BRIDGE_EXE`, the Proton path and the prefix
+from the game's environment and starts `lmubridge.exe` inside the game's Proton
+session. The bridge registers simd's file as the Windows named mapping `LMU_Data`.
+When the game then creates its mapping, it gets that one, so it **writes straight
+into the Linux file** and nothing is copied. simd starts mapping as soon as the
+block contains data, and stops the bridge when the game exits.
+
+**The bridge must be running before the game creates its mapping.** If the game
+gets there first, it gets an ordinary memory-backed mapping. The bridge then opens
+that instead, and the Linux file stays zero. simd then logs at INFO level that
+Le Mans Ultimate is running but `/dev/shm/LMU_Data` is still empty, thirty seconds
+after it first saw the game. Only then does it try the rFactor 2 plugin. Waiting
+first keeps a plugin found while the game is still loading from holding the sim
+for the whole session. In a test with a stand-in game, simd had the bridge running
+3 to 5 seconds after the game process appeared. simshmbridge's own instructions
+start the bridge 5 seconds after the game, so LMU appears to create its mapping
+later than that. With LMU 1.4.3 under GE-Proton10-34-LMU, the bridge started by
+simd won the race: the game's view of `LMU_Data` was simd's file.
+
+**The file must be at least as large as the game's mapping.** The layout below is
+324,820 bytes. simapi's `LMU_SIZE` was originally 250,000, which is too small; it has
+been 505,000 since commit `5a03496` ("Fixed lmu by changing file size", #22). The
+simshmbridge author notes that LMU crashes after the splash screen if the bridge does
+not allocate enough space.
+
+simd zeroes the file whenever it stops mapping a game, including when the player
+returns to the garage, and LMU keeps writing to it afterwards. simapi therefore
+accepts the block as live when either `gameVersion` or `activeVehicles` is set.
+
+### simshmbridge by hand
+
+Without simd's automatic bridging, build `lmushm` as well (`make -f Makefile.lmu`).
+Start `lmushm` first, then the game together with the bridge, e.g. as a Steam
+launch option:
+
+```
+%command% & sleep 5 && ~/path/to/proton run ~/simshmbridge/assets/lmubridge.exe
+```
 
 ### winecarte
 
@@ -41,7 +99,7 @@ two provide. Use only one of them at a time, because both own that file.
 game's Proton session and **copies** the game's `LMU_Data` mapping into
 `/dev/shm/LMU_Data`. Each copy is triggered by the game's named event `LMU_Data_Event`,
 which LMU signals on every update; winecarte falls back to polling every 16 ms if
-the event is missing.
+the event is missing. Because it copies, the start-up order does not matter.
 
 The Linux file is the size of the mapped region rounded up to whole pages:
 **327,680 bytes**, not simapi's `LMU_SIZE` of 505,000. A reader must not touch bytes
@@ -52,37 +110,16 @@ winecarte also knows about LMU's lock objects, `LMU_SharedMemoryLockData` (two
 for LMU by default, so a copy can contain a frame the game was halfway through
 writing.
 
-### simshmbridge (what simapi uses)
+**Do not combine winecarte with simd's automatic memory mapping.** simd creates
+`/dev/shm/LMU_Data` itself, resizes it to `LMU_SIZE`, zeroes it whenever it stops
+mapping, and deletes it when it exits, so it would fight winecarte over the file.
+To use winecarte, run simd with `-h`, which turns the mapping off for every game.
 
-[simshmbridge](https://github.com/spacefreak18/simshmbridge) has an LMU target
-(`make -f Makefile.lmu`) that builds two programs:
-
-- **`lmushm`** (or [simd](/simapi/simd)) creates `/dev/shm/LMU_Data` on the Linux
-  side, `LMU_SIZE` bytes long.
-- **`lmubridge.exe`** runs inside the game's Proton prefix. It opens that Linux file
-  and registers it as the Windows named mapping `LMU_Data`.
-
-So the game writes directly into the Linux file, and nothing is copied. The order
-matters: start `lmushm` or simd first, then the game together with the bridge, e.g.
-as a Steam launch option:
-
-```
-%command% & sleep 5 && ~/path/to/proton run ~/simshmbridge/assets/lmubridge.exe
-```
-
-**The file must be at least as large as the game's mapping.** The layout below is
-324,820 bytes. simapi's `LMU_SIZE` was originally 250,000, which is too small; it has
-been 505,000 since commit `5a03496` ("Fixed lmu by changing file size", #22). The
-simshmbridge author notes that LMU crashes after the splash screen if the bridge does
-not allocate enough space.
-
-Two things to be aware of:
+### Things to be aware of
 
 - **The file existing does not mean the game is running.** simd and `lmushm`
   create `/dev/shm/LMU_Data` before the game starts, and it stays all zeros until
   the game writes to it.
-- **simd's compatibility mode also creates this file** (and resizes it to
-  `LMU_SIZE`). Do not enable it together with winecarte.
 - **pyLMUSharedMemory (used by TinyPedal) resizes the file.** Since its commit
   `ec902acb` (2026-10-13), on Linux it truncates `/dev/shm/LMU_Data` and fills it
   with zeros whenever the file's size is not exactly 324,820 bytes. That size
