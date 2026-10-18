@@ -7,6 +7,7 @@
 #include "../simapi.h"
 #include "../simmapper.h"
 #include "../pcars2.h"
+#include "maputil.h"
 
 #include "../../include/pcars2data.h"
 
@@ -107,6 +108,7 @@ void map_project_cars2_data(SimData* simdata, SimMap* simmap, bool udp, char* ba
         simdata->fuel = *(float*) (char*) (a + offsetof(struct pcars2APIStruct, mFuelLevel));
         simdata->gas = *(float*) (char*) (a + offsetof(struct pcars2APIStruct, mThrottle));
         simdata->brake = *(float*) (char*) (a + offsetof(struct pcars2APIStruct, mBrake));
+        simdata->clutch = clamp_pedal(*(float*) (char*) (a + offsetof(struct pcars2APIStruct, mUnfilteredClutch)));
         simdata->steer = *(float*) (char*) (a + offsetof(struct pcars2APIStruct, mSteering));
         // bool
         simdata->abs = *(float*) (char*) (a + offsetof(struct pcars2APIStruct, mAntiLockActive));
@@ -332,6 +334,7 @@ void map_project_cars2_data(SimData* simdata, SimMap* simmap, bool udp, char* ba
                     simdata->gear = simdata->gear & 15;
                     simdata->brake = *(uint8_t*) (char*) (a + offsetof(struct ams2UDPData, sBrake));
                     simdata->gas = *(uint8_t*) (char*) (a + offsetof(struct ams2UDPData, sThrottle));
+                    simdata->clutch = clamp_pedal(*(uint8_t*) (char*) (a + offsetof(struct ams2UDPData, sUnfilteredClutch)) / 255.0);
                     simdata->altitude = 1;
 
                     simdata->gearc[0] = simdata->gear + 48;
