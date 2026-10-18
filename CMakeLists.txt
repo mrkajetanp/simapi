@@ -5,7 +5,7 @@ include(GNUInstallDirs)
 if(WIN32)
     add_compile_definitions(OS_WIN)
 endif()
-add_library(simapi SHARED simapi/simmapper.c simapi/simapi_mqtt.c simapi/getpid.c simapi/mapping/acmapper.c simapi/mapping/pcars2mapper.c simapi/mapping/rf2mapper.c simapi/mapping/scs2mapper.c simapi/mapping/outgaugemapper.c simapi/mapping/dirt2mapper.c simapi/mapping/f12018mapper.c simapi/mapping/wreckfest2mapper.c simapi/mapping/rbrmapper.c simapi/mapping/forzamapper.c simapi/mapping/r3emapper.c)
+add_library(simapi SHARED simapi/simmapper.c simapi/simapi_mqtt.c simapi/getpid.c simapi/mapping/acmapper.c simapi/mapping/pcars2mapper.c simapi/mapping/rf2mapper.c simapi/mapping/scs2mapper.c simapi/mapping/outgaugemapper.c simapi/mapping/dirt2mapper.c simapi/mapping/f12018mapper.c simapi/mapping/wreckfest2mapper.c simapi/mapping/rbrmapper.c simapi/mapping/forzamapper.c simapi/mapping/r3emapper.c simapi/mapping/lmumapper.c)
 
 set(SIMAPI_PUBLIC_HEADERS
     "simapi/simmapper.h"

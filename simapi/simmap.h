@@ -9,6 +9,7 @@
 #include "wreckfest2.h"
 #include "rbr.h"
 #include "r3edef.h"
+#include "lmudef.h"
 
 struct _simmap
 {
@@ -24,6 +25,7 @@ struct _simmap
     Dirt2Map dirt2;
     Wreckfest2Map wf2;
     RBRMap rbr;
+    LMUMap lmu;
 };
 
 #endif

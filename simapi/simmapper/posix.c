@@ -1327,6 +1327,7 @@ int simapi_datamap(SimData* simdata, SimMap* simmap, SimulatorAPI simulatorapi, 
 
         case SIMULATORAPI_LMU:
 
+            map_lmu_data(simdata, simmap);
             break;
     }
 
@@ -1600,6 +1601,36 @@ int simapi_init(SimData* simdata, SimMap* simmap, SimulatorAPI simulator, Simula
             //slogi("found data for RFactor2...");
             break;
 
+        case SIMULATORAPI_LMU :
+
+            if(simmap->lmu.has_telemetry == true)
+            {
+                return 0;
+            }
+            simmap->lmu.has_telemetry=false;
+            simmap->lmu.fd_telemetry = shm_open(LMU_FILE, O_RDONLY, S_IRUSR | S_IWUSR);
+            if (simmap->lmu.fd_telemetry == -1)
+            {
+                return SIMAPI_ERROR_NODATA;
+            }
+            // bridges size the file to the game's mapping, which can be smaller
+            // than LMU_SIZE; reading past its end would raise SIGBUS
+            struct stat lmu_stat;
+            if (fstat(simmap->lmu.fd_telemetry, &lmu_stat) == -1 || lmu_stat.st_size < (off_t) sizeof(simmap->lmu.lmu_telemetry))
+            {
+                close(simmap->lmu.fd_telemetry);
+                return SIMAPI_ERROR_NODATA;
+            }
+            simmap->lmu.telemetry_map_addr = mmap(NULL, sizeof(simmap->lmu.lmu_telemetry), PROT_READ, MAP_SHARED, simmap->lmu.fd_telemetry, 0);
+            if (simmap->lmu.telemetry_map_addr == MAP_FAILED)
+            {
+                close(simmap->lmu.fd_telemetry);
+                return 30;
+            }
+            simmap->lmu.prev_elapsed_time = -1;
+            simmap->lmu.has_telemetry=true;
+            break;
+
         case SIMULATORAPI_SCSTRUCKSIM2 :
 
             if(simmap->scs2.has_telemetry == true)
@@ -1748,6 +1779,21 @@ int simapi_sim_clear(SimData* simdata, SimMap* simmap, bool issimd)
         }
 
         simmap->rf2.has_scoring = false;
+    }
+
+    if(simmap->lmu.has_telemetry==true)
+    {
+        if (munmap(simmap->lmu.telemetry_map_addr, sizeof(simmap->lmu.lmu_telemetry)) == -1)
+        {
+            return 100;
+        }
+
+        if (close(simmap->lmu.fd_telemetry) == -1)
+        {
+            return 200;
+        }
+
+        simmap->lmu.has_telemetry = false;
     }
 
     if(simmap->scs2.has_telemetry==true)
