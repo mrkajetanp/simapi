@@ -8,6 +8,7 @@
 #include "../simapi.h"
 #include "../simmapper.h"
 #include "../rf2.h"
+#include "maputil.h"
 
 #include "../../include/rf2data.h"
 
@@ -116,7 +117,7 @@ void map_rfactor2_data(SimData* simdata, SimMap* simmap)
     simdata->maxrpm = droundint( *(double*) (char*) (a + offsetof(struct rF2Telemetry, mVehicles) + ((sizeof(rF2VehicleTelemetry) * veh) + offsetof(rF2VehicleTelemetry, mEngineMaxRPM))));
     simdata->gas = *(double*) (char*) (a + offsetof(struct rF2Telemetry, mVehicles) + (sizeof(rF2VehicleTelemetry) * veh) + offsetof(rF2VehicleTelemetry, mUnfilteredThrottle));
     simdata->brake = *(double*) (char*) (a + offsetof(struct rF2Telemetry, mVehicles) + (sizeof(rF2VehicleTelemetry) * veh) + offsetof(rF2VehicleTelemetry, mUnfilteredBrake));
-    simdata->clutch = *(double*) (char*) (a + offsetof(struct rF2Telemetry, mVehicles) + (sizeof(rF2VehicleTelemetry) * veh) + offsetof(rF2VehicleTelemetry, mUnfilteredClutch));
+    simdata->clutch = clamp_pedal(*(double*) (char*) (a + offsetof(struct rF2Telemetry, mVehicles) + (sizeof(rF2VehicleTelemetry) * veh) + offsetof(rF2VehicleTelemetry, mUnfilteredClutch)));
     simdata->steer = *(double*) (char*) (a + offsetof(struct rF2Telemetry, mVehicles) + (sizeof(rF2VehicleTelemetry) * veh) + offsetof(rF2VehicleTelemetry, mUnfilteredSteering));
     simdata->fuel = *(double*) (char*) (a + offsetof(struct rF2Telemetry, mVehicles) + (sizeof(rF2VehicleTelemetry) * veh) + offsetof(rF2VehicleTelemetry, mFuel));
     simdata->brakebias = *(double*) (char*) (a + offsetof(struct rF2Telemetry, mVehicles) + (sizeof(rF2VehicleTelemetry) * veh) + offsetof(rF2VehicleTelemetry, mRearBrakeBias));

@@ -285,7 +285,11 @@ static void test_double_range(const char* sim, double (*f)(double))
 int main(void)
 {
     test_float_range("ac", ac_clutch);
+    test_float_clamp("ac", ac_clutch);
     test_double_range("rf2", rf2_clutch);
+    check("rf2", "above range 1.5", rf2_clutch(1.5), 1.0);
+    check("rf2", "below range -0.2", rf2_clutch(-0.2), 0.0);
+    check("rf2", "NaN", rf2_clutch(NAN), 0.0);
     test_float_range("pcars2", pcars2_clutch);
     test_float_clamp("pcars2", pcars2_clutch);
     test_byte_range("ams2 udp", ams2udp_clutch);
@@ -299,8 +303,11 @@ int main(void)
     test_float_range("lfs", lfs_clutch);
     test_byte_range("forza", forza_clutch);
     test_float_range("dirt2", dirt2_clutch);
+    test_float_clamp("dirt2", dirt2_clutch);
     test_float_range("rbr", rbr_clutch);
+    test_float_clamp("rbr", rbr_clutch);
     test_float_range("wreckfest2", wf2_clutch);
+    test_float_clamp("wreckfest2", wf2_clutch);
 
     printf("%d/%d checks passed\n", checks - failures, checks);
     return failures == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
