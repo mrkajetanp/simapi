@@ -17,7 +17,7 @@ Currently available data:
 - simdata.gearc - character string of the current gear for the current player
 - simdata.playerflag - current flag shown to player
 - simdata.rpms - rpms
-- simdata.gear - numeric gear where 0 is neutral
+- simdata.gear - numeric gear where 0 is reverse, 1 is neutral and 2 is first gear
 - simdata.velocity - forward velocity in km/h
 - simdata.mtick - constantly incrementing time variable
 - simdata.maxrpm - max rpm of current car ( not provided by all sims )
