@@ -293,7 +293,7 @@ Vehicle telemetry (replacing `mExpansion[103]` at 745; `mExpansion[20]` remains 
 | Offset | Type | Field | Meaning |
 |---:|---|---|---|
 | 745 | bool | `mLapInvalidated` | |
-| 746 | bool | `mABSActive` | **ABS intervening right now** |
+| 746 | bool | `mABSActive` | **ABS intervening right now**; toggles as the ABS cycles. Mapped to `abs` |
 | 747 | bool | `mTCActive` | traction control intervening right now |
 | 748 | bool | `mSpeedLimiterActive` | |
 | 749 | u8 | `mWiperState` | 0 off, 1 auto, 2 slow, 3 fast |
@@ -392,9 +392,15 @@ apart from two expected findings: one AI wheel briefly off the ground (small neg
 load), and the reduced-detail AI cars described under
 [Other cars](#other-cars-in-the-session).
 
-**Still not seen in real data:** reverse gear, an ABS intervention (`mABSActive` was
-always 0, and this car has no ABS), the rotation sign conventions, and values from
-any other car or track.
+A live recording in a GT3 car, sampled at 50 Hz through hard stops with ABS on,
+showed `mABSActive` set throughout every stop. It switched on and off every 20 to
+160 ms as the ABS cycled, and it appeared outside braking only as the brake was
+released, during a spin, and at walking pace. `mTCActive` was set on corner exits,
+and `mTC` / `mTCMax` (5 / 11) and `mABS` / `mABSMax` (9 / 9) stayed constant. That
+car's tyres read 34 and 36 cm.
+
+**Still not seen in real data:** reverse gear, the rotation sign conventions, and
+values from any other track.
 
 S397's `SharedMemoryInterface.hpp` itself is not redistributed and was not consulted
 directly. The LMU-specific field names, types and comments here come from

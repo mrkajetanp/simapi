@@ -23,6 +23,10 @@
 // at a standstill both ground velocities are noise around zero and their ratio is meaningless
 #define LMU_MIN_SLIP_SPEED 1.0
 
+// LMU 1.3 placed mABSActive in the second byte of what include/lmu.h still
+// declares as the telemetry's mExpansion
+#define LMU_EXPANSION_ABS_ACTIVE 1
+
 static int droundint(double d)
 {
     return trunc(nearbyint(d));
@@ -204,9 +208,11 @@ void map_lmu_data(SimData* simdata, SimMap* simmap)
     {
         simdata->turboboost = (t->mTurboBoostPressure - ATMOSPHERE_PA) / 100000.0;
     }
-    // LMU 1.3 reports ABS activity, but the scale monocoque expects for abs is
-    // not established; never leave another sim's value behind
     simdata->abs = 0;
+    if(t->mExpansion[LMU_EXPANSION_ABS_ACTIVE] != 0)
+    {
+        simdata->abs = 1;
+    }
     simdata->handbrake = 0;
     simdata->altitude = 1;
 
@@ -277,6 +283,7 @@ void map_lmu_data(SimData* simdata, SimMap* simmap)
         simdata->worldXvelocity = 0;
         simdata->worldYvelocity = 0;
         simdata->worldZvelocity = 0;
+        simdata->abs = 0;
         for(int i = 0; i < 4; i++)
         {
             simdata->tyreRPS[i] = 0;
