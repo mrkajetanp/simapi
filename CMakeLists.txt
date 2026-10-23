@@ -50,4 +50,12 @@ if(BUILD_SIMD)
     target_link_libraries(view_telemetry simapi m)
 endif()
 
+option(ENABLE_TESTS "Build unit tests" OFF)
+if(ENABLE_TESTS)
+    enable_testing()
+    add_executable(beamng_test tests/beamng_test.c)
+    target_link_libraries(beamng_test simapi m)
+    add_test(NAME beamng_test COMMAND beamng_test)
+endif()
+
 
