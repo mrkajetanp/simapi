@@ -109,10 +109,28 @@ static void test_forward_gears(void)
     done(&f);
 }
 
+static void test_pedals(void)
+{
+    Fixture f = fixture();
+    f.raw->truck_f.userThrottle = 0.3f;
+    f.raw->truck_f.userBrake = 0.7f;
+    map(&f);
+    check("pedals", "throttle 0.3", f.sd->gas, 0.3f);
+    check("pedals", "brake 0.7", f.sd->brake, 0.7f);
+
+    f.raw->truck_f.userThrottle = 1.0f;
+    f.raw->truck_f.userBrake = 0.0f;
+    map(&f);
+    check("pedals", "throttle 1", f.sd->gas, 1.0);
+    check("pedals", "brake 0", f.sd->brake, 0.0);
+    done(&f);
+}
+
 int main(void)
 {
     test_engine();
     test_forward_gears();
+    test_pedals();
 
     printf("%d checks, %d failures\n", checks, failures);
     return failures == 0 ? 0 : 1;
