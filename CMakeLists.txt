@@ -50,4 +50,12 @@ if(BUILD_SIMD)
     target_link_libraries(view_telemetry simapi m)
 endif()
 
+option(ENABLE_TESTS "Build unit tests" OFF)
+if(ENABLE_TESTS)
+    enable_testing()
+    add_executable(scs2_test tests/scs2_test.c)
+    target_link_libraries(scs2_test simapi m)
+    add_test(NAME scs2_test COMMAND scs2_test)
+endif()
+
 
