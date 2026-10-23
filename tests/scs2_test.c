@@ -362,6 +362,22 @@ static void test_car_name(void)
     done(&f);
 }
 
+static void test_status(void)
+{
+    Fixture f = fixture();
+    map(&f);
+    check("status", "driving -> active play", f.sd->simstatus, SIMAPI_STATUS_ACTIVEPLAY);
+
+    f.raw->paused = true;
+    map(&f);
+    check("status", "paused -> menu", f.sd->simstatus, SIMAPI_STATUS_MENU);
+
+    f.raw->sdkActive = false;
+    map(&f);
+    check("status", "sdk inactive -> off", f.sd->simstatus, SIMAPI_STATUS_OFF);
+    done(&f);
+}
+
 int main(void)
 {
     test_engine();
@@ -377,6 +393,7 @@ int main(void)
     test_chassis();
     test_cab();
     test_car_name();
+    test_status();
 
     printf("%d checks, %d failures\n", checks, failures);
     return failures == 0 ? 0 : 1;

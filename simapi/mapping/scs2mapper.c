@@ -145,7 +145,22 @@ void map_trucks_data(SimData* simdata, SimMap* simmap)
 
     a = simmap->scs2.telemetry_map_addr;
 
-    simdata->simstatus = 2;
+    // the plugin clears sdkActive when the game shuts the SDK down, and keeps
+    // paused set while the game is paused or not yet driving
+    bool active = *(bool*) (char*) (a + offsetof(struct scs2TelemetryMap_s, sdkActive));
+    bool paused = *(bool*) (char*) (a + offsetof(struct scs2TelemetryMap_s, paused));
+    if (active == false)
+    {
+        simdata->simstatus = SIMAPI_STATUS_OFF;
+    }
+    else if (paused == true)
+    {
+        simdata->simstatus = SIMAPI_STATUS_MENU;
+    }
+    else
+    {
+        simdata->simstatus = SIMAPI_STATUS_ACTIVEPLAY;
+    }
 
     // "Brand Name"; the plugin's strings are 64 bytes and may lack a terminator
     char* brand = (char*) (a + offsetof(struct scs2TelemetryMap_s, config_s.truckBrand));
