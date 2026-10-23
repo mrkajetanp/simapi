@@ -146,14 +146,22 @@ void map_trucks_data(SimData* simdata, SimMap* simmap)
     a = simmap->scs2.telemetry_map_addr;
 
     simdata->simstatus = 2;
-    simdata->car[0] ='d';
-    simdata->car[1]='e';
-    simdata->car[2]='f';
-    simdata->car[3]='a';
-    simdata->car[4]='u';
-    simdata->car[5]='l';
-    simdata->car[6]='t';
-    simdata->car[7]='\0';
+
+    // "Brand Name"; the plugin's strings are 64 bytes and may lack a terminator
+    char* brand = (char*) (a + offsetof(struct scs2TelemetryMap_s, config_s.truckBrand));
+    char* name = (char*) (a + offsetof(struct scs2TelemetryMap_s, config_s.truckName));
+    if (brand[0] != '\0' && name[0] != '\0')
+    {
+        snprintf(simdata->car, sizeof(simdata->car), "%.64s %.64s", brand, name);
+    }
+    else if (name[0] != '\0')
+    {
+        snprintf(simdata->car, sizeof(simdata->car), "%.64s", name);
+    }
+    else
+    {
+        snprintf(simdata->car, sizeof(simdata->car), "default");
+    }
 
 
     // speed is negative in reverse (SCS SDK truck.speed); simdata->velocity is unsigned
@@ -162,6 +170,22 @@ void map_trucks_data(SimData* simdata, SimMap* simmap)
     simdata->brake = *(float*) (char*) (a + offsetof(struct scs2TelemetryMap_s, truck_f.userBrake));
     simdata->gas = *(float*) (char*) (a + offsetof(struct scs2TelemetryMap_s, truck_f.userThrottle));
     simdata->maxrpm = droundint( *(float*) (char*) (a + offsetof(struct scs2TelemetryMap_s, config_f.engineRpmMax)));
+    simdata->maxgears = *(uint32_t*) (char*) (a + offsetof(struct scs2TelemetryMap_s, config_ui.gears));
+
+    // SCS steering input is counterclockwise (left) positive; SimData uses right positive like the other sims
+    simdata->steer = -*(float*) (char*) (a + offsetof(struct scs2TelemetryMap_s, truck_f.userSteer));
+    simdata->handbrake = *(bool*) (char*) (a + offsetof(struct scs2TelemetryMap_s, truck_b.parkBrake)) ? 1.0 : 0.0;
+
+    // litres
+    simdata->fuel = *(float*) (char*) (a + offsetof(struct scs2TelemetryMap_s, truck_f.fuel));
+    simdata->fuelcapacity = *(float*) (char*) (a + offsetof(struct scs2TelemetryMap_s, config_f.fuelCapacity));
+
+    // SCS gives one brake temperature for the whole truck
+    double braketemp = *(float*) (char*) (a + offsetof(struct scs2TelemetryMap_s, truck_f.brakeTemperature));
+    for (int i = 0; i < 4; i++)
+    {
+        simdata->braketemp[i] = braketemp;
+    }
 
     // SCS gears: >0 forward, 0 neutral, <0 reverse (any of several reverse gears)
     int32_t gear = *(int32_t*) (char*) (a + offsetof(struct scs2TelemetryMap_s, truck_i.gear));
