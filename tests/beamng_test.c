@@ -121,9 +121,19 @@ static void test_outgauge_basics(void)
     done(&f);
 }
 
+static void test_car_name(void)
+{
+    Fixture f = fixture();
+    outgauge(&f);
+    map(&f);
+    check_str("car", "beam", f.sd->car, "beam");
+    done(&f);
+}
+
 int main(void)
 {
     test_outgauge_basics();
+    test_car_name();
 
     printf("%d checks, %d failures\n", checks, failures);
     return failures == 0 ? 0 : 1;

@@ -39,9 +39,10 @@ void map_outgauge_outsim_data(SimData* simdata, SimMap* simmap, SimulatorEXE sim
             simdata->gas = *(float*) (char*) (a + offsetof(struct outgauge, throttle));
             simdata->brake = *(float*) (char*) (a + offsetof(struct outgauge, brake));
 
+            // car is 4 bytes with no terminator ("beam" for BeamNG)
             uint8_t i = 0;
             simdata->car[4] = '\0';
-            while(i < 3)
+            while(i < 4)
             {
                 char b = *(char*) (char*) (a + offsetof(struct outgauge, car) + i);
                 simdata->car[i] = b;
