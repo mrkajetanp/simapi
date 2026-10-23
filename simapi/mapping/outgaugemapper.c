@@ -1,6 +1,7 @@
 #include <stddef.h>
 #include <math.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "../simmap.h"
 #include "../simdata.h"
@@ -11,9 +12,64 @@
 #include "../../include/outgauge.h"
 
 
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
 static int froundint(float f)
 {
     return trunc(nearbyint(f));
+}
+
+/*
+ * BeamNG MotionSim: world position, velocity and orientation. Velocity
+ * arrives in world space (right-handed, Z up); project it onto the car's
+ * right, forward and up directions for the local Xvelocity, Yvelocity and
+ * Zvelocity. Forward comes from yaw (clockwise from +Y) and pitch (nose up
+ * positive); up is sent in the packet.
+ */
+static void map_beamng_motionsim(SimData* simdata, char* a)
+{
+    double yaw = *(float*) (char*) (a + offsetof(struct beamng_motionsim, yawPos));
+    double pitch = *(float*) (char*) (a + offsetof(struct beamng_motionsim, pitchPos));
+    double roll = *(float*) (char*) (a + offsetof(struct beamng_motionsim, rollPos));
+
+    double velocity[3];
+    velocity[0] = *(float*) (char*) (a + offsetof(struct beamng_motionsim, velX));
+    velocity[1] = *(float*) (char*) (a + offsetof(struct beamng_motionsim, velY));
+    velocity[2] = *(float*) (char*) (a + offsetof(struct beamng_motionsim, velZ));
+
+    double up[3];
+    up[0] = *(float*) (char*) (a + offsetof(struct beamng_motionsim, upX));
+    up[1] = *(float*) (char*) (a + offsetof(struct beamng_motionsim, upY));
+    up[2] = *(float*) (char*) (a + offsetof(struct beamng_motionsim, upZ));
+
+    double forward[3];
+    forward[0] = sin(yaw) * cos(pitch);
+    forward[1] = cos(yaw) * cos(pitch);
+    forward[2] = sin(pitch);
+
+    // right = forward x up
+    double right[3];
+    right[0] = forward[1] * up[2] - forward[2] * up[1];
+    right[1] = forward[2] * up[0] - forward[0] * up[2];
+    right[2] = forward[0] * up[1] - forward[1] * up[0];
+
+    simdata->Xvelocity = velocity[0] * right[0] + velocity[1] * right[1] + velocity[2] * right[2];
+    simdata->Yvelocity = velocity[0] * forward[0] + velocity[1] * forward[1] + velocity[2] * forward[2];
+    simdata->Zvelocity = velocity[0] * up[0] + velocity[1] * up[1] + velocity[2] * up[2];
+
+    // SimData keeps the vertical axis in z, as BeamNG does
+    simdata->worldXvelocity = velocity[0];
+    simdata->worldYvelocity = velocity[1];
+    simdata->worldZvelocity = velocity[2];
+    simdata->worldposx = *(float*) (char*) (a + offsetof(struct beamng_motionsim, posX));
+    simdata->worldposy = *(float*) (char*) (a + offsetof(struct beamng_motionsim, posY));
+    simdata->worldposz = *(float*) (char*) (a + offsetof(struct beamng_motionsim, posZ));
+
+    simdata->heading = yaw * (180.0 / M_PI);
+    simdata->pitch = pitch * (180.0 / M_PI);
+    simdata->roll = roll * (180.0 / M_PI);
 }
 
 void map_outgauge_outsim_data(SimData* simdata, SimMap* simmap, SimulatorEXE simexe, char* base)
@@ -22,6 +78,14 @@ void map_outgauge_outsim_data(SimData* simdata, SimMap* simmap, SimulatorEXE sim
     {
         char* a = base;
         int id = 0;
+
+        // BeamNG sends MotionSim packets to the same port when it's pointed there;
+        // OutGauge can't start with the magic, as BeamNG sends its time field as 0
+        if (simexe == SIMULATOREXE_BEAMNG && memcmp(a, BEAMNG_MOTIONSIM_MAGIC, 4) == 0)
+        {
+            map_beamng_motionsim(simdata, a);
+            return;
+        }
 
         id = *(uint8_t*) (char*) (a + offsetof(struct outgauge, id));
         if(id == 2 || simexe == SIMULATOREXE_BEAMNG)

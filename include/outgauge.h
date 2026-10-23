@@ -139,3 +139,36 @@ struct outsim // size depends on OutSim Opts
 
     OutSimWheel       OSWheels[4];    // array of structs - see above
 };
+
+// BeamNG MotionSim UDP packet, sent alongside OutGauge when enabled in
+// Options > Other > Protocols. Field list from BeamNG's protocol documentation
+// (documentation.beamng.com/modding/protocols); units and axes checked against
+// captured packets: little-endian floats; world space is right-handed with
+// Z up; positions in m, velocities in m/s in world space, angles in radians.
+#define BEAMNG_MOTIONSIM_MAGIC "BNG1"
+
+struct beamng_motionsim
+{
+    char        magic[4];       // fixed "BNG1"
+    float       posX;           // world position
+    float       posY;
+    float       posZ;
+    float       velX;           // velocity, world space
+    float       velY;
+    float       velZ;
+    float       accX;           // acceleration, gravity not included
+    float       accY;
+    float       accZ;
+    float       upX;            // vector pointing up relative to the car
+    float       upY;
+    float       upZ;
+    float       rollPos;        // roll, pitch and yaw
+    float       pitchPos;
+    float       yawPos;
+    float       rollVel;        // roll, pitch and yaw velocities
+    float       pitchVel;
+    float       yawVel;
+    float       rollAcc;        // roll, pitch and yaw accelerations
+    float       pitchAcc;
+    float       yawAcc;
+};
