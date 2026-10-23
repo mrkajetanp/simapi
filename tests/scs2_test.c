@@ -315,6 +315,53 @@ static void test_chassis(void)
     done(&f);
 }
 
+static void test_cab(void)
+{
+    Fixture f = fixture();
+    f.raw->config_ui.gears = 12;
+    f.raw->truck_f.userSteer = 0.25f;   // SCS: counterclockwise, i.e. left
+    f.raw->truck_b.parkBrake = true;
+    f.raw->truck_f.fuel = 512.5f;
+    f.raw->config_f.fuelCapacity = 900.0f;
+    f.raw->truck_f.brakeTemperature = 86.5f;
+    map(&f);
+    check("cab", "maxgears", f.sd->maxgears, 12);
+    check("cab", "steer left -> negative", f.sd->steer, -0.25);
+    check("cab", "parking brake on", f.sd->handbrake, 1.0);
+    check("cab", "fuel litres", f.sd->fuel, 512.5);
+    check("cab", "fuel capacity", f.sd->fuelcapacity, 900.0);
+    for (int i = 0; i < 4; i++)
+    {
+        check("cab", "brake temp (truck-wide)", f.sd->braketemp[i], 86.5);
+    }
+
+    f.raw->truck_b.parkBrake = false;
+    map(&f);
+    check("cab", "parking brake off", f.sd->handbrake, 0.0);
+    done(&f);
+}
+
+static void test_car_name(void)
+{
+    Fixture f = fixture();
+    map(&f);
+    check_str("car", "no config", f.sd->car, "default");
+
+    strcpy(f.raw->config_s.truckBrand, "Volvo");
+    strcpy(f.raw->config_s.truckName, "FH16 2012");
+    map(&f);
+    check_str("car", "brand and name", f.sd->car, "Volvo FH16 2012");
+
+    // 64 characters with no terminator must not run into the next field
+    memset(f.raw->config_s.truckName, 'N', sizeof(f.raw->config_s.truckName));
+    strcpy(f.raw->config_s.truckId, "next.field");
+    map(&f);
+    char want[128];
+    snprintf(want, sizeof(want), "Volvo %.64s", f.raw->config_s.truckName);
+    check_str("car", "unterminated name", f.sd->car, want);
+    done(&f);
+}
+
 int main(void)
 {
     test_engine();
@@ -328,6 +375,8 @@ int main(void)
     test_wheels_no_powered_flags();
     test_wheels_no_config();
     test_chassis();
+    test_cab();
+    test_car_name();
 
     printf("%d checks, %d failures\n", checks, failures);
     return failures == 0 ? 0 : 1;
