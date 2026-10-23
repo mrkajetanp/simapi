@@ -166,6 +166,12 @@ static void test_gear_text(void)
     og->gear = 7;
     map(&f);
     check_str("gearc", "6", f.sd->gearc, "6");
+
+    // a second reverse gear arrives as -1 (gearIndex -2, plus 1)
+    og->gear = -1;
+    map(&f);
+    check("gearc", "second reverse gear", f.sd->gear, SIMAPI_GEAR_REVERSE);
+    check_str("gearc", "second reverse: R", f.sd->gearc, "R");
     done(&f);
 }
 

@@ -90,7 +90,9 @@ void map_outgauge_outsim_data(SimData* simdata, SimMap* simmap, SimulatorEXE sim
         id = *(uint8_t*) (char*) (a + offsetof(struct outgauge, id));
         if(id == 2 || simexe == SIMULATOREXE_BEAMNG)
         {
-            simdata->gear = *(uint8_t*) (char*) (a + offsetof(struct outgauge, gear));
+            // gear is a signed char; a second reverse gear arrives as -1
+            int8_t gear = *(int8_t*) (char*) (a + offsetof(struct outgauge, gear));
+            simdata->gear = gear < 0 ? SIMAPI_GEAR_REVERSE : gear;
             //int time = *(uint64_t*) (char*) (a + offsetof(struct outgauge, time));
             simdata->rpms = froundint( *(float*) (char*) (a + offsetof(struct outgauge, rpm)) );
             if(simdata->rpms > 0 && simdata->rpms > simdata->maxrpm)
