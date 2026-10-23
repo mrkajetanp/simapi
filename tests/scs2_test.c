@@ -378,6 +378,14 @@ static void test_status(void)
     done(&f);
 }
 
+static void test_game_names(void)
+{
+    check("names", "\"et2\" -> ETS2", simapi_strtogame("et2"), SIMULATOREXE_EUROTRUCKS2);
+    check("names", "\"at\" -> ATS", simapi_strtogame("at"), SIMULATOREXE_AMERICANTRUCKS);
+    check("names", "ETS2 round trip", simapi_strtogame(simapi_gametostr(SIMULATOREXE_EUROTRUCKS2)), SIMULATOREXE_EUROTRUCKS2);
+    check("names", "ATS round trip", simapi_strtogame(simapi_gametostr(SIMULATOREXE_AMERICANTRUCKS)), SIMULATOREXE_AMERICANTRUCKS);
+}
+
 int main(void)
 {
     test_engine();
@@ -394,6 +402,7 @@ int main(void)
     test_cab();
     test_car_name();
     test_status();
+    test_game_names();
 
     printf("%d checks, %d failures\n", checks, failures);
     return failures == 0 ? 0 : 1;

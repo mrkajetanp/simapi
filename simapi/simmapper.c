@@ -159,7 +159,7 @@ int simapi_strtogame(const char* game)
     }
     else if (sstrcicmp(game, "at") == 0)
     {
-        sim = SIMULATOREXE_EUROTRUCKS2;
+        sim = SIMULATOREXE_AMERICANTRUCKS;
     }
     else if (sstrcicmp(game, "lmu") == 0)
     {
