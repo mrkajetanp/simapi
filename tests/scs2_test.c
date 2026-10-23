@@ -281,6 +281,40 @@ static void test_wheels_no_config(void)
     done(&f);
 }
 
+static void test_chassis(void)
+{
+    Fixture f = fixture();
+    // driving forwards at 15 m/s, drifting right at 0.5 m/s, rising at 0.2 m/s
+    f.raw->truck_fv.lv_accelerationX = 0.5f;
+    f.raw->truck_fv.lv_accelerationY = 0.2f;
+    f.raw->truck_fv.lv_accelerationZ = -15.0f;
+    f.raw->truck_dp.rotationX = 0.25;   // facing west
+    f.raw->truck_dp.rotationY = 0.025;  // nose up
+    f.raw->truck_dp.rotationZ = -0.05;
+    f.raw->truck_dp.coordinateX = 1000.5;
+    f.raw->truck_dp.coordinateY = 42.0;
+    f.raw->truck_dp.coordinateZ = -2000.25;
+    map(&f);
+    check("chassis", "Xvelocity right", f.sd->Xvelocity, 0.5f);
+    check("chassis", "Yvelocity forward", f.sd->Yvelocity, 15.0);
+    check("chassis", "Zvelocity up", f.sd->Zvelocity, 0.2f);
+    check("chassis", "heading west 90", f.sd->heading, 90.0);
+    check("chassis", "pitch 9", f.sd->pitch, 9.0);
+    check("chassis", "roll -18", f.sd->roll, -18.0);
+    check("chassis", "worldposx east", f.sd->worldposx, 1000.5);
+    check("chassis", "worldposy south", f.sd->worldposy, -2000.25);
+    check("chassis", "worldposz up", f.sd->worldposz, 42.0);
+
+    f.raw->truck_dp.rotationX = 0.75;   // facing east
+    map(&f);
+    check("chassis", "heading east -90", f.sd->heading, -90.0);
+
+    f.raw->truck_dp.rotationX = 0.5;    // facing south
+    map(&f);
+    check("chassis", "heading south 180", f.sd->heading, 180.0);
+    done(&f);
+}
+
 int main(void)
 {
     test_engine();
@@ -293,6 +327,7 @@ int main(void)
     test_wheels_unsimulated();
     test_wheels_no_powered_flags();
     test_wheels_no_config();
+    test_chassis();
 
     printf("%d checks, %d failures\n", checks, failures);
     return failures == 0 ? 0 : 1;

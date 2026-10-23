@@ -211,6 +211,28 @@ void map_trucks_data(SimData* simdata, SimMap* simmap)
         simdata->suspension[i] = new_suspension[i];
     }
 
+    // local velocity; SCS vehicle space is X right, Y up, Z backwards, while
+    // SimData has Yvelocity forward and Zvelocity vertical
+    simdata->Xvelocity = *(float*) (char*) (a + offsetof(struct scs2TelemetryMap_s, truck_fv.lv_accelerationX));
+    simdata->Yvelocity = -*(float*) (char*) (a + offsetof(struct scs2TelemetryMap_s, truck_fv.lv_accelerationZ));
+    simdata->Zvelocity = *(float*) (char*) (a + offsetof(struct scs2TelemetryMap_s, truck_fv.lv_accelerationY));
+
+    // orientation in degrees; SCS stores fractions of a turn, heading counterclockwise from north
+    double heading = 360.0 * *(double*) (char*) (a + offsetof(struct scs2TelemetryMap_s, truck_dp.rotationX));
+    if (heading > 180.0)
+    {
+        heading -= 360.0;
+    }
+    simdata->heading = heading;
+    simdata->pitch = 360.0 * *(double*) (char*) (a + offsetof(struct scs2TelemetryMap_s, truck_dp.rotationY));
+    simdata->roll = 360.0 * *(double*) (char*) (a + offsetof(struct scs2TelemetryMap_s, truck_dp.rotationZ));
+
+    // world position; SCS world space is X east, Y up, Z south. SimData keeps
+    // the vertical axis in worldposz, as the AC mapper does
+    simdata->worldposx = *(double*) (char*) (a + offsetof(struct scs2TelemetryMap_s, truck_dp.coordinateX));
+    simdata->worldposy = *(double*) (char*) (a + offsetof(struct scs2TelemetryMap_s, truck_dp.coordinateZ));
+    simdata->worldposz = *(double*) (char*) (a + offsetof(struct scs2TelemetryMap_s, truck_dp.coordinateY));
+
     simdata->altitude = 1;
 
 }
