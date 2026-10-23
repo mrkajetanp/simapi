@@ -13,6 +13,23 @@ typedef struct //lfsVecInt
     int z;
 } lfsVecInt;
 
+// OutGauge flags (OG_x) and dash light bits (DL_x), as documented by LFS and BeamNG
+#define OG_TURBO            8192    // show turbo gauge
+#define OG_KM               16384   // if not set, the user prefers miles
+#define OG_BAR              32768   // if not set, the user prefers PSI
+
+#define OG_DL_SHIFT         (1 << 0)    // shift light
+#define OG_DL_FULLBEAM      (1 << 1)    // full beam
+#define OG_DL_HANDBRAKE     (1 << 2)    // handbrake
+#define OG_DL_PITSPEED      (1 << 3)    // pit speed limiter // N/A in BeamNG
+#define OG_DL_TC            (1 << 4)    // TC active or switched off
+#define OG_DL_SIGNAL_L      (1 << 5)    // left turn signal
+#define OG_DL_SIGNAL_R      (1 << 6)    // right turn signal
+#define OG_DL_SIGNAL_ANY    (1 << 7)    // shared turn signal // N/A in BeamNG
+#define OG_DL_OILWARN       (1 << 8)    // oil pressure warning
+#define OG_DL_BATTERY       (1 << 9)    // battery warning
+#define OG_DL_ABS           (1 << 10)   // ABS active or switched off
+
 struct outgauge
 {
     unsigned       time;            // time in milliseconds (to check order) // N/A, hardcoded to 0

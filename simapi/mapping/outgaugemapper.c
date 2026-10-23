@@ -38,6 +38,24 @@ void map_outgauge_outsim_data(SimData* simdata, SimMap* simmap, SimulatorEXE sim
             simdata->fuel = *(float*) (char*) (a + offsetof(struct outgauge, fuel));
             simdata->gas = *(float*) (char*) (a + offsetof(struct outgauge, throttle));
             simdata->brake = *(float*) (char*) (a + offsetof(struct outgauge, brake));
+            simdata->clutch = *(float*) (char*) (a + offsetof(struct outgauge, clutch));
+
+            // OutGauge already uses simapi's gear numbering: 0 reverse, 1 neutral, 2 first
+            if (simdata->gear == SIMAPI_GEAR_REVERSE)
+            {
+                snprintf(simdata->gearc, sizeof(simdata->gearc), "R");
+            }
+            else if (simdata->gear == SIMAPI_GEAR_NEUTRAL)
+            {
+                snprintf(simdata->gearc, sizeof(simdata->gearc), "N");
+            }
+            else
+            {
+                snprintf(simdata->gearc, sizeof(simdata->gearc), "%d", (simdata->gear - 1) % 100);
+            }
+
+            uint32_t showlights = *(uint32_t*) (char*) (a + offsetof(struct outgauge, showLights));
+            simdata->handbrake = (showlights & OG_DL_HANDBRAKE) ? 1.0 : 0.0;
 
             // car is 4 bytes with no terminator ("beam" for BeamNG)
             uint8_t i = 0;

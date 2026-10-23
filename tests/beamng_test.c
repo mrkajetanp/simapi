@@ -130,10 +130,62 @@ static void test_car_name(void)
     done(&f);
 }
 
+static void test_clutch(void)
+{
+    Fixture f = fixture();
+    struct outgauge* og = outgauge(&f);
+    map(&f);
+    check("clutch", "released", f.sd->clutch, 0.0);
+    og->clutch = 0.6f;
+    map(&f);
+    check("clutch", "0.6", f.sd->clutch, 0.6f);
+    og->clutch = 1.0f;
+    map(&f);
+    check("clutch", "fully pressed", f.sd->clutch, 1.0);
+    done(&f);
+}
+
+static void test_gear_text(void)
+{
+    Fixture f = fixture();
+    struct outgauge* og = outgauge(&f);
+    og->gear = 0;
+    map(&f);
+    check("gearc", "reverse gear", f.sd->gear, SIMAPI_GEAR_REVERSE);
+    check_str("gearc", "R", f.sd->gearc, "R");
+    og->gear = 1;
+    map(&f);
+    check_str("gearc", "N", f.sd->gearc, "N");
+    og->gear = 2;
+    map(&f);
+    check_str("gearc", "1", f.sd->gearc, "1");
+    og->gear = 7;
+    map(&f);
+    check_str("gearc", "6", f.sd->gearc, "6");
+    done(&f);
+}
+
+static void test_handbrake(void)
+{
+    Fixture f = fixture();
+    struct outgauge* og = outgauge(&f);
+    og->dashLights = OG_DL_HANDBRAKE | OG_DL_ABS | OG_DL_TC;
+    og->showLights = OG_DL_ABS | OG_DL_TC | OG_DL_SIGNAL_L;
+    map(&f);
+    check("handbrake", "light off -> 0", f.sd->handbrake, 0.0);
+    og->showLights |= OG_DL_HANDBRAKE;
+    map(&f);
+    check("handbrake", "light on -> 1", f.sd->handbrake, 1.0);
+    done(&f);
+}
+
 int main(void)
 {
     test_outgauge_basics();
     test_car_name();
+    test_clutch();
+    test_gear_text();
+    test_handbrake();
 
     printf("%d checks, %d failures\n", checks, failures);
     return failures == 0 ? 0 : 1;
