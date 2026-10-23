@@ -8,7 +8,7 @@
 | RFactor 2 | RFactor 2 | [shm (native)](https://spacefreak18.github.io/simapi/sharedmemory) | [rFactor2SharedMemoryMapPlugin64](https://github.com/schlegp/rF2SharedMemoryMapPlugin_Wine/tree/master/build) | Platinum | |
 | LeMans Ultimate | RFactor 2 | [shm (native)](https://spacefreak18.github.io/simapi/sharedmemory) | [rFactor2SharedMemoryMapPlugin64](https://github.com/schlegp/rF2SharedMemoryMapPlugin_Wine/tree/master/build) | Platinum | |
 | Live For Speed | Live For Speed | udp | N/A | Bronze | |
-| BeamNG | Live For Speed | udp | N/A | Bronze | |
+| BeamNG | Live For Speed | udp (OutGauge, MotionSim) | N/A | Bronze | [setup](https://spacefreak18.github.io/simapi/beamng) |
 | Dirt Rally 2 | Dirt Rally | udp | N/A | Bronze | |
 | American Truck Simulator | Truck Simulator | [shm (native)](https://spacefreak18.github.io/simapi/sharedmemory) | [scs-sdk-plugin](https://github.com/alxwk/scs-sdk-plugin) | Silver | |
 | Euro Truck Simulator 2 | Truck Simulator | [shm (native)](https://spacefreak18.github.io/simapi/sharedmemory) | [scs-sdk-plugin](https://github.com/alxwk/scs-sdk-plugin) | Silver | |
