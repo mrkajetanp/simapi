@@ -127,6 +127,16 @@ static void test_pedals(void)
     map(&f);
     check("pedals", "throttle 1", f.sd->gas, 1.0);
     check("pedals", "brake 0", f.sd->brake, 0.0);
+    check("pedals", "clutch released", f.sd->clutch, 0.0);
+
+    f.raw->truck_f.userClutch = 0.4f;
+    f.raw->truck_f.gameClutch = 0.9f;   // e.g. automatic clutch; must not be used
+    map(&f);
+    check("pedals", "clutch 0.4 (user input)", f.sd->clutch, 0.4f);
+
+    f.raw->truck_f.userClutch = 1.0f;
+    map(&f);
+    check("pedals", "clutch fully pressed", f.sd->clutch, 1.0);
     done(&f);
 }
 
