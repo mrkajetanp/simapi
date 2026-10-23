@@ -126,11 +126,59 @@ static void test_pedals(void)
     done(&f);
 }
 
+static void test_reverse(void)
+{
+    Fixture f = fixture();
+    f.raw->config_ui.gears_reverse = 2;
+    f.raw->truck_f.speed = -5.0f;
+    f.raw->truck_i.gear = -1;
+    f.raw->truck_i.gearDashboard = -1;
+    map(&f);
+    check("reverse", "speed -5 m/s -> 18 km/h", f.sd->velocity, 18);
+    check("reverse", "R1 -> reverse", f.sd->gear, SIMAPI_GEAR_REVERSE);
+    check_str("reverse", "gearc R1", f.sd->gearc, "R1");
+
+    f.raw->truck_i.gear = -2;
+    f.raw->truck_i.gearDashboard = -2;
+    map(&f);
+    check("reverse", "R2 -> reverse", f.sd->gear, SIMAPI_GEAR_REVERSE);
+    check_str("reverse", "gearc R2", f.sd->gearc, "R2");
+
+    f.raw->config_ui.gears_reverse = 1;
+    f.raw->truck_i.gearDashboard = -1;
+    map(&f);
+    check_str("reverse", "gearc R (one reverse)", f.sd->gearc, "R");
+
+    f.raw->truck_f.speed = 5.0f;
+    map(&f);
+    check("reverse", "speed +5 m/s -> 18 km/h", f.sd->velocity, 18);
+    done(&f);
+}
+
+static void test_gear_text(void)
+{
+    Fixture f = fixture();
+    f.raw->truck_i.gearDashboard = 0;
+    map(&f);
+    check_str("gearc", "neutral", f.sd->gearc, "N");
+
+    f.raw->truck_i.gearDashboard = 5;
+    map(&f);
+    check_str("gearc", "5", f.sd->gearc, "5");
+
+    f.raw->truck_i.gearDashboard = 12;
+    map(&f);
+    check_str("gearc", "12", f.sd->gearc, "12");
+    done(&f);
+}
+
 int main(void)
 {
     test_engine();
     test_forward_gears();
     test_pedals();
+    test_reverse();
+    test_gear_text();
 
     printf("%d checks, %d failures\n", checks, failures);
     return failures == 0 ? 0 : 1;
