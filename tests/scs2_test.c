@@ -25,6 +25,10 @@
 
 #include "../include/scs2data.h"
 
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
 static int failures = 0;
 static int checks = 0;
 
@@ -172,6 +176,111 @@ static void test_gear_text(void)
     done(&f);
 }
 
+static void set_wheel(Fixture* f, int i, float x, float z, bool powered, bool simulated)
+{
+    f->raw->config_fv.truckWheelPositionX[i] = x;
+    f->raw->config_fv.truckWheelPositionZ[i] = z;
+    f->raw->config_b.truckWheelPowered[i] = powered;
+    f->raw->config_b.truckWheelSimulated[i] = simulated;
+    // distinct per-wheel values so the test can tell which wheel was picked
+    f->raw->truck_f.truck_wheelVelocity[i] = i + 1;
+    f->raw->config_f.truckWheelRadius[i] = 0.5f + 0.01f * i;
+    f->raw->truck_f.truck_wheelSuspDeflection[i] = 0.01f * (i + 1);
+}
+
+static void check_wheels(const char* test, Fixture* f, int fl, int fr, int rl, int rr)
+{
+    int want[4] = { fl, fr, rl, rr };
+    const char* names[4] = { "front left", "front right", "rear left", "rear right" };
+    char what[64];
+    for (int i = 0; i < 4; i++)
+    {
+        snprintf(what, sizeof(what), "%s rad/s", names[i]);
+        check(test, what, f->sd->tyreRPS[i], 2.0 * M_PI * (want[i] + 1));
+        snprintf(what, sizeof(what), "%s diameter", names[i]);
+        check(test, what, f->sd->tyrediameter[i], 2.0 * (0.5f + 0.01f * want[i]));
+        snprintf(what, sizeof(what), "%s suspension", names[i]);
+        check(test, what, f->sd->suspension[i], 0.01f * (want[i] + 1));
+    }
+}
+
+// 6x4 tractor with the wheel indexes deliberately out of order
+static void test_wheels_by_position(void)
+{
+    Fixture f = fixture();
+    f.raw->config_ui.truckWheelCount = 6;
+    set_wheel(&f, 0, -0.9f, 2.6f, true, true);   // second drive axle, left
+    set_wheel(&f, 1, -1.0f, -3.6f, false, true); // front left
+    set_wheel(&f, 2, 0.9f, 1.3f, true, true);    // first drive axle, right
+    set_wheel(&f, 3, 1.0f, -3.6f, false, true);  // front right
+    set_wheel(&f, 4, -0.9f, 1.3f, true, true);   // first drive axle, left
+    set_wheel(&f, 5, 0.9f, 2.6f, true, true);    // second drive axle, right
+    map(&f);
+    check_wheels("wheels 6x4", &f, 1, 3, 4, 2);
+    done(&f);
+}
+
+// 6x2 with a non-driven pusher axle ahead of the drive axle
+static void test_wheels_pusher_axle(void)
+{
+    Fixture f = fixture();
+    f.raw->config_ui.truckWheelCount = 6;
+    set_wheel(&f, 0, -1.0f, -3.6f, false, true);
+    set_wheel(&f, 1, 1.0f, -3.6f, false, true);
+    set_wheel(&f, 2, -0.9f, 0.8f, false, true);
+    set_wheel(&f, 3, 0.9f, 0.8f, false, true);
+    set_wheel(&f, 4, -0.9f, 2.1f, true, true);
+    set_wheel(&f, 5, 0.9f, 2.1f, true, true);
+    map(&f);
+    check_wheels("wheels pusher", &f, 0, 1, 4, 5);
+    done(&f);
+}
+
+// a wheel the game doesn't simulate is never picked, even if it's furthest forward
+static void test_wheels_unsimulated(void)
+{
+    Fixture f = fixture();
+    f.raw->config_ui.truckWheelCount = 5;
+    set_wheel(&f, 0, -1.0f, -5.0f, false, false);
+    set_wheel(&f, 1, -1.0f, -3.6f, false, true);
+    set_wheel(&f, 2, 1.0f, -3.6f, false, true);
+    set_wheel(&f, 3, -0.9f, 1.3f, true, true);
+    set_wheel(&f, 4, 0.9f, 1.3f, true, true);
+    map(&f);
+    check_wheels("wheels unsim", &f, 1, 2, 3, 4);
+    done(&f);
+}
+
+// with no powered flags, the rear axle is the next one back
+static void test_wheels_no_powered_flags(void)
+{
+    Fixture f = fixture();
+    f.raw->config_ui.truckWheelCount = 6;
+    set_wheel(&f, 0, -1.0f, -3.6f, false, true);
+    set_wheel(&f, 1, 1.0f, -3.6f, false, true);
+    set_wheel(&f, 2, -0.9f, 2.6f, false, true);
+    set_wheel(&f, 3, 0.9f, 2.6f, false, true);
+    set_wheel(&f, 4, -0.9f, 1.3f, false, true);
+    set_wheel(&f, 5, 0.9f, 1.3f, false, true);
+    map(&f);
+    check_wheels("wheels unpowered", &f, 0, 1, 4, 5);
+    done(&f);
+}
+
+// before the truck configuration arrives, wheels 0..3 are used as they are
+static void test_wheels_no_config(void)
+{
+    Fixture f = fixture();
+    for (int i = 0; i < 4; i++)
+    {
+        set_wheel(&f, i, 0.0f, 0.0f, false, false);
+    }
+    f.raw->config_ui.truckWheelCount = 0;
+    map(&f);
+    check_wheels("wheels noconfig", &f, 0, 1, 2, 3);
+    done(&f);
+}
+
 int main(void)
 {
     test_engine();
@@ -179,6 +288,11 @@ int main(void)
     test_pedals();
     test_reverse();
     test_gear_text();
+    test_wheels_by_position();
+    test_wheels_pusher_axle();
+    test_wheels_unsimulated();
+    test_wheels_no_powered_flags();
+    test_wheels_no_config();
 
     printf("%d checks, %d failures\n", checks, failures);
     return failures == 0 ? 0 : 1;

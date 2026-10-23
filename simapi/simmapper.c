@@ -532,6 +532,9 @@ static int set_sim_info(SimInfo* si)
         case SIMULATORAPI_SCSTRUCKSIM2 :
             si->SimUsesUDP = false;
             si->SimSupportsBasicTelemetry = true;
+            si->SimSupportsTyreEffects = true;
+            si->SimSupportsHapticEffects = true;
+            si->SimCalculatesTyreDiameter = true;
             break;
         case SIMULATORAPI_OUTSIMOUTGAUGE :
             si->SimUsesUDP = true;

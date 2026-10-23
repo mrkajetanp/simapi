@@ -10,9 +10,128 @@
 
 #include "../../include/scs2data.h"
 
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
+#define SCS2_WHEELS 16
+// wheels this close to each other along the truck (metres) are on the same axle
+#define SCS2_AXLE_TOLERANCE 0.25
+
 static int droundint(double d)
 {
     return trunc(nearbyint(d));
+}
+
+/*
+ * Choose which of the truck's wheels to report as front left, front right,
+ * rear left and rear right. The SCS SDK doesn't define a wheel order, so use
+ * the configured wheel positions (vehicle space: X right, Z backwards). The
+ * front axle is the one furthest forward. The rear axle is the first powered
+ * axle behind it, or the next axle back if none is powered. Only wheels the
+ * game physically simulates are considered. Until the truck configuration
+ * has arrived, fall back to wheels 0..3.
+ */
+static void scs2_pick_wheels(char* a, int wheels[4])
+{
+    for (int i = 0; i < 4; i++)
+    {
+        wheels[i] = i;
+    }
+
+    uint32_t count = *(uint32_t*) (char*) (a + offsetof(struct scs2TelemetryMap_s, config_ui.truckWheelCount));
+    if (count > SCS2_WHEELS)
+    {
+        count = SCS2_WHEELS;
+    }
+
+    float x[SCS2_WHEELS];
+    float z[SCS2_WHEELS];
+    bool simulated[SCS2_WHEELS];
+    bool powered[SCS2_WHEELS];
+    bool anysimulated = false;
+    for (uint32_t i = 0; i < count; i++)
+    {
+        x[i] = *(float*) (char*) (a + offsetof(struct scs2TelemetryMap_s, config_fv.truckWheelPositionX) + (sizeof(float) * i));
+        z[i] = *(float*) (char*) (a + offsetof(struct scs2TelemetryMap_s, config_fv.truckWheelPositionZ) + (sizeof(float) * i));
+        simulated[i] = *(bool*) (char*) (a + offsetof(struct scs2TelemetryMap_s, config_b.truckWheelSimulated) + (sizeof(bool) * i));
+        powered[i] = *(bool*) (char*) (a + offsetof(struct scs2TelemetryMap_s, config_b.truckWheelPowered) + (sizeof(bool) * i));
+        anysimulated = anysimulated || simulated[i];
+    }
+    for (uint32_t i = 0; i < count; i++)
+    {
+        if (anysimulated == false)
+        {
+            simulated[i] = true;
+        }
+    }
+
+    int front = -1;
+    for (uint32_t i = 0; i < count; i++)
+    {
+        if (simulated[i] && (front < 0 || z[i] < z[front]))
+        {
+            front = i;
+        }
+    }
+    if (front < 0)
+    {
+        return;
+    }
+
+    int rear = -1;
+    for (uint32_t i = 0; i < count; i++)
+    {
+        if (simulated[i] == false || z[i] <= z[front] + SCS2_AXLE_TOLERANCE)
+        {
+            continue;
+        }
+        if (rear < 0 || (powered[i] && !powered[rear]) || (powered[i] == powered[rear] && z[i] < z[rear]))
+        {
+            rear = i;
+        }
+    }
+    if (rear < 0)
+    {
+        return;
+    }
+
+    // outermost wheel on each side of each axle
+    int picked[4] = { -1, -1, -1, -1 };
+    for (uint32_t i = 0; i < count; i++)
+    {
+        if (simulated[i] == false)
+        {
+            continue;
+        }
+        int axle;
+        if (fabs(z[i] - z[front]) <= SCS2_AXLE_TOLERANCE)
+        {
+            axle = 0;
+        }
+        else if (fabs(z[i] - z[rear]) <= SCS2_AXLE_TOLERANCE)
+        {
+            axle = 2;
+        }
+        else
+        {
+            continue;
+        }
+        int side = axle + (x[i] < 0 ? 0 : 1);
+        int p = picked[side];
+        if (p < 0 || (side % 2 == 0 && x[i] < x[p]) || (side % 2 == 1 && x[i] > x[p]))
+        {
+            picked[side] = i;
+        }
+    }
+
+    if (picked[0] >= 0 && picked[1] >= 0 && picked[2] >= 0 && picked[3] >= 0)
+    {
+        for (int i = 0; i < 4; i++)
+        {
+            wheels[i] = picked[i];
+        }
+    }
 }
 
 void map_trucks_data(SimData* simdata, SimMap* simmap)
@@ -42,10 +161,6 @@ void map_trucks_data(SimData* simdata, SimMap* simmap)
     simdata->rpms = droundint(*(float*) (char*) (a + offsetof(struct scs2TelemetryMap_s, truck_f.engineRpm)));
     simdata->brake = *(float*) (char*) (a + offsetof(struct scs2TelemetryMap_s, truck_f.userBrake));
     simdata->gas = *(float*) (char*) (a + offsetof(struct scs2TelemetryMap_s, truck_f.userThrottle));
-    simdata->tyreRPS[0] = *(float*) (char*) (a + offsetof(struct scs2TelemetryMap_s, truck_f.truck_wheelVelocity));
-    simdata->tyreRPS[1] = *(float*) (char*) (a + offsetof(struct scs2TelemetryMap_s, truck_f.truck_wheelVelocity) + (sizeof(float) * 1));
-    simdata->tyreRPS[2] = *(float*) (char*) (a + offsetof(struct scs2TelemetryMap_s, truck_f.truck_wheelVelocity) + (sizeof(float) * 2));
-    simdata->tyreRPS[3] = *(float*) (char*) (a + offsetof(struct scs2TelemetryMap_s, truck_f.truck_wheelVelocity) + (sizeof(float) * 3));
     simdata->maxrpm = droundint( *(float*) (char*) (a + offsetof(struct scs2TelemetryMap_s, config_f.engineRpmMax)));
 
     // SCS gears: >0 forward, 0 neutral, <0 reverse (any of several reverse gears)
@@ -77,6 +192,23 @@ void map_trucks_data(SimData* simdata, SimMap* simmap)
     else
     {
         snprintf(simdata->gearc, sizeof(simdata->gearc), "N");
+    }
+
+    // wheels: SCS reports angular velocity in rotations per second, SimData uses rad/s
+    int wheels[4];
+    scs2_pick_wheels(a, wheels);
+    double new_suspension[4];
+    for (int i = 0; i < 4; i++)
+    {
+        int w = wheels[i];
+        simdata->tyreRPS[i] = 2.0 * M_PI * *(float*) (char*) (a + offsetof(struct scs2TelemetryMap_s, truck_f.truck_wheelVelocity) + (sizeof(float) * w));
+        simdata->tyrediameter[i] = 2.0 * *(float*) (char*) (a + offsetof(struct scs2TelemetryMap_s, config_f.truckWheelRadius) + (sizeof(float) * w));
+        new_suspension[i] = *(float*) (char*) (a + offsetof(struct scs2TelemetryMap_s, truck_f.truck_wheelSuspDeflection) + (sizeof(float) * w));
+    }
+    map_suspension_velocity(simdata, new_suspension);
+    for (int i = 0; i < 4; i++)
+    {
+        simdata->suspension[i] = new_suspension[i];
     }
 
     simdata->altitude = 1;
