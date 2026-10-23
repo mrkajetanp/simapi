@@ -179,8 +179,13 @@ void map_trucks_data(SimData* simdata, SimMap* simmap)
     }
 
 
-    // speed is negative in reverse (SCS SDK truck.speed); simdata->velocity is unsigned
-    simdata->velocity = droundint(3.6 * fabs(*(float*) (char*) (a + offsetof(struct scs2TelemetryMap_s, truck_f.speed))));
+    // ground speed from the truck's local velocity vector rather than truck.speed,
+    // which the SDK calls speedometer speed: the wheel slip and lock effects
+    // compare velocity with wheel speed, so it must not depend on the wheels
+    double vx = *(float*) (char*) (a + offsetof(struct scs2TelemetryMap_s, truck_fv.lv_accelerationX));
+    double vy = *(float*) (char*) (a + offsetof(struct scs2TelemetryMap_s, truck_fv.lv_accelerationY));
+    double vz = *(float*) (char*) (a + offsetof(struct scs2TelemetryMap_s, truck_fv.lv_accelerationZ));
+    simdata->velocity = droundint(3.6 * sqrt(vx * vx + vy * vy + vz * vz));
     simdata->rpms = droundint(*(float*) (char*) (a + offsetof(struct scs2TelemetryMap_s, truck_f.engineRpm)));
     simdata->brake = *(float*) (char*) (a + offsetof(struct scs2TelemetryMap_s, truck_f.userBrake));
     simdata->gas = *(float*) (char*) (a + offsetof(struct scs2TelemetryMap_s, truck_f.userThrottle));
