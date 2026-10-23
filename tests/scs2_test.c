@@ -144,11 +144,11 @@ static void test_reverse(void)
 {
     Fixture f = fixture();
     f.raw->config_ui.gears_reverse = 2;
-    f.raw->truck_f.speed = -5.0f;
+    f.raw->truck_fv.lv_accelerationZ = 5.0f;   // backwards in SCS vehicle space
     f.raw->truck_i.gear = -1;
     f.raw->truck_i.gearDashboard = -1;
     map(&f);
-    check("reverse", "speed -5 m/s -> 18 km/h", f.sd->velocity, 18);
+    check("reverse", "5 m/s backwards -> 18 km/h", f.sd->velocity, 18);
     check("reverse", "R1 -> reverse", f.sd->gear, SIMAPI_GEAR_REVERSE);
     check_str("reverse", "gearc R1", f.sd->gearc, "R1");
 
@@ -163,9 +163,26 @@ static void test_reverse(void)
     map(&f);
     check_str("reverse", "gearc R (one reverse)", f.sd->gearc, "R");
 
-    f.raw->truck_f.speed = 5.0f;
+    f.raw->truck_fv.lv_accelerationZ = -5.0f;  // forwards
     map(&f);
     check("reverse", "speed +5 m/s -> 18 km/h", f.sd->velocity, 18);
+    done(&f);
+}
+
+static void test_ground_speed(void)
+{
+    Fixture f = fixture();
+    // wheels locked: the speedometer channel might read 0, the truck still moves
+    f.raw->truck_f.speed = 0.0f;
+    f.raw->truck_fv.lv_accelerationZ = -20.0f;
+    map(&f);
+    check("speed", "ground speed, not speedometer", f.sd->velocity, 72);
+
+    // sliding: 3-4-5 triangle of forward and sideways motion
+    f.raw->truck_fv.lv_accelerationX = 3.0f;
+    f.raw->truck_fv.lv_accelerationZ = -4.0f;
+    map(&f);
+    check("speed", "includes sideways motion", f.sd->velocity, 18);
     done(&f);
 }
 
@@ -414,6 +431,7 @@ int main(void)
     test_forward_gears();
     test_pedals();
     test_reverse();
+    test_ground_speed();
     test_gear_text();
     test_wheels_by_position();
     test_wheels_pusher_axle();
