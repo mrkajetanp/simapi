@@ -362,13 +362,25 @@ static void test_car_name(void)
     map(&f);
     check_str("car", "brand and name", f.sd->car, "Volvo FH16 2012");
 
-    // 64 characters with no terminator must not run into the next field
-    memset(f.raw->config_s.truckName, 'N', sizeof(f.raw->config_s.truckName));
-    strcpy(f.raw->config_s.truckId, "next.field");
-    map(&f);
+    // 64 characters with no terminator must not run into the field after them
+    // (truckName is followed by cargoId, truckBrand by truckId)
+    char sixtyfour[65];
+    memset(sixtyfour, 'N', 64);
+    sixtyfour[64] = '\0';
     char want[128];
-    snprintf(want, sizeof(want), "Volvo %.64s", f.raw->config_s.truckName);
+
+    memcpy(f.raw->config_s.truckName, sixtyfour, 64);
+    strcpy(f.raw->config_s.cargoId, "cargo.next");
+    map(&f);
+    snprintf(want, sizeof(want), "Volvo %s", sixtyfour);
     check_str("car", "unterminated name", f.sd->car, want);
+
+    strcpy(f.raw->config_s.truckName, "FH16 2012");
+    memcpy(f.raw->config_s.truckBrand, sixtyfour, 64);
+    strcpy(f.raw->config_s.truckId, "truck.next");
+    map(&f);
+    snprintf(want, sizeof(want), "%s FH16 2012", sixtyfour);
+    check_str("car", "unterminated brand", f.sd->car, want);
     done(&f);
 }
 
