@@ -50,6 +50,8 @@ typedef struct
     int r3e_fd;
     void* lmu_addr;
     int lmu_fd;
+    void* scs2_addr;
+    int scs2_fd;
 }
 SimCompatMap;
 

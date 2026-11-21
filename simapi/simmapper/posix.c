@@ -1,6 +1,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <errno.h>
 #include <sys/mman.h>
 #include <fcntl.h>
 #include <string.h>
@@ -130,6 +131,13 @@ bool simapi_does_sim_need_bridge(SimulatorEXE s)
     }
 
     if(s == SIMULATOREXE_RACE_ROOM)
+    {
+        return true;
+    }
+
+    // Only the Windows build under Proton: simd reaches this solely through a
+    // simd.config entry, and those name the .exe, which the native build lacks.
+    if(s == SIMULATOREXE_EUROTRUCKS2 || s == SIMULATOREXE_AMERICANTRUCKS)
     {
         return true;
     }
@@ -2195,6 +2203,33 @@ int simapi_compatmap_open(SimCompatMap* compatmap)
         return 30;
     }
     compatmap->accrew_addr = addr;
+
+    // shm_open() takes no subdirectories, and the SCS plugin's name has one.
+    if (mkdir("/dev/shm/SCS", S_IRWXU) == -1 && errno != EEXIST)
+    {
+        printf("mkdir");
+        return 10;
+    }
+    compatmap->scs2_fd = open("/dev/shm/" SCS2_TELEMETRY_FILE, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+    if (compatmap->scs2_fd == -1)
+    {
+        printf("open");
+        return 10;
+    }
+    res = ftruncate(compatmap->scs2_fd, SCS2_TELEMETRY_SIZE);
+    if (res == -1)
+    {
+        printf("ftruncate");
+        return 20;
+    }
+
+    addr = mmap(NULL, SCS2_TELEMETRY_SIZE, PROT_WRITE, MAP_SHARED, compatmap->scs2_fd, 0);
+    if (addr == MAP_FAILED)
+    {
+        printf("mmap");
+        return 30;
+    }
+    compatmap->scs2_addr = addr;
     return 0;
 }
 
@@ -2212,6 +2247,9 @@ int simapi_compatmap_clear(SimCompatMap* compatmap)
     memset(compatmap->r3e_addr, 0, R3E_SIZE);
     memset(compatmap->pcars2_addr, 0, PCARS2_SIZE);
     memset(compatmap->lmu_addr, 0, LMU_SIZE);
+    // Not the SCS file: this runs on every pause, and the plugin writes
+    // sdkActive and the truck config only once, so clearing them would stop
+    // simd mapping until the game restarts. The plugin zeroes it at start.
 
     return 0;
 }
@@ -2322,6 +2360,16 @@ int simapi_compatmap_free(SimCompatMap* compatmap)
     }
     shm_unlink(LMU_FILE);
     if (close(compatmap->lmu_fd) == -1)
+    {
+        return 200;
+    }
+
+    if (munmap(compatmap->scs2_addr, SCS2_TELEMETRY_SIZE) == -1)
+    {
+        return 100;
+    }
+    unlink("/dev/shm/" SCS2_TELEMETRY_FILE);
+    if (close(compatmap->scs2_fd) == -1)
     {
         return 200;
     }
