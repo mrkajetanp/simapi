@@ -8,6 +8,7 @@
 #include "../simapi.h"
 #include "../simmapper.h"
 #include "../lmudef.h"
+#include "maputil.h"
 
 #include "../../include/lmu.h"
 
@@ -198,7 +199,7 @@ void map_lmu_data(SimData* simdata, SimMap* simmap)
     simdata->maxgears = t->mMaxGears;
     simdata->gas = t->mUnfilteredThrottle;
     simdata->brake = t->mUnfilteredBrake;
-    simdata->clutch = t->mUnfilteredClutch;
+    simdata->clutch = clamp_pedal(t->mUnfilteredClutch);
     simdata->steer = t->mUnfilteredSteering;
     simdata->fuel = t->mFuel;
     simdata->fuelcapacity = t->mFuelCapacity;

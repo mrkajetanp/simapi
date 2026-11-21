@@ -27,6 +27,7 @@
 
 #include "../include/outgauge.h"
 #include "../include/forza.h"
+#include "../include/lmu.h"
 
 static int failures = 0;
 static int checks = 0;
@@ -80,6 +81,25 @@ static double rf2_clutch(double raw)
     sm->rf2.telemetry_map_addr = t;
 
     map_rfactor2_data(sd, sm);
+    double c = sd->clutch;
+
+    free(t);
+    free(sm);
+    free(sd);
+    return c;
+}
+
+static double lmu_clutch(double raw)
+{
+    SimData* sd = new_simdata();
+    SimMap* sm = new_simmap();
+    struct LMUObject* t = calloc(1, sizeof(*t));
+    t->telemetry.playerHasVehicle = 1;
+    t->telemetry.activeVehicles = 1;
+    t->telemetry.telemInfo[0].mUnfilteredClutch = raw;
+    sm->lmu.telemetry_map_addr = t;
+
+    map_lmu_data(sd, sm);
     double c = sd->clutch;
 
     free(t);
@@ -290,6 +310,10 @@ int main(void)
     check("rf2", "above range 1.5", rf2_clutch(1.5), 1.0);
     check("rf2", "below range -0.2", rf2_clutch(-0.2), 0.0);
     check("rf2", "NaN", rf2_clutch(NAN), 0.0);
+    test_double_range("lmu", lmu_clutch);
+    check("lmu", "above range 1.5", lmu_clutch(1.5), 1.0);
+    check("lmu", "below range -0.2", lmu_clutch(-0.2), 0.0);
+    check("lmu", "NaN", lmu_clutch(NAN), 0.0);
     test_float_range("pcars2", pcars2_clutch);
     test_float_clamp("pcars2", pcars2_clutch);
     test_byte_range("ams2 udp", ams2udp_clutch);
